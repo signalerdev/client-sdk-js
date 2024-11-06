@@ -1,6 +1,0 @@
-{
-  "dependencies": {
-    "@protobuf-ts/twirp-transport": "^2.9.4",
-    "webrtc-adapter": "^9.0.1"
-  }
-}

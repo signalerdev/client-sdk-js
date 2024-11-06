@@ -1,12 +1,11 @@
 {
   "name": "@signalerdev/client",
-  "version": "0.0.3",
+  "version": "0.0.4",
   "exports": "./mod.ts",
   "tasks": {
     "publish:npm": "deno run -A build_npm.ts && cd npm && npm publish --access public",
     "publish:jsr": "deno publish --allow-slow-types"
   },
-  "imports": {
-    "@signalerdev/rpc": "jsr:@signalerdev/rpc@^0.0.2"
-  }
+  "_comment": "import map doesn't work properly yet with dnt",
+  "imports": {}
 }

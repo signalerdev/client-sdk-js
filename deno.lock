@@ -6,7 +6,6 @@
     "jsr:@deno/dnt@*": "0.41.3",
     "jsr:@deno/dnt@0.41.3": "0.41.3",
     "jsr:@signalerdev/rpc@0.0.1": "0.0.1",
-    "jsr:@signalerdev/rpc@0.0.2": "0.0.2",
     "jsr:@std/assert@0.223": "0.223.0",
     "jsr:@std/assert@0.226": "0.226.0",
     "jsr:@std/async@1.0.8": "1.0.8",
@@ -28,15 +27,13 @@
     "npm:@deno/vite-plugin@1": "1.0.0_vite@5.4.10",
     "npm:@protobuf-ts/runtime-rpc@^2.9.4": "2.9.4",
     "npm:@protobuf-ts/runtime@^2.9.4": "2.9.4",
-    "npm:@protobuf-ts/twirp-transport@^2.9.4": "2.9.4",
     "npm:@types/react-dom@^18.3.1": "18.3.1",
     "npm:@types/react@^18.3.11": "18.3.12",
     "npm:@vitejs/plugin-react@^4.3.3": "4.3.3_vite@5.4.10_@babel+core@7.26.0",
     "npm:react-dom@^18.3.1": "18.3.1_react@18.3.1",
     "npm:react@^18.3.1": "18.3.1",
     "npm:vite@*": "5.4.10",
-    "npm:vite@^5.4.9": "5.4.10",
-    "npm:webrtc-adapter@^9.0.1": "9.0.1"
+    "npm:vite@^5.4.9": "5.4.10"
   },
   "jsr": {
     "@david/code-block-writer@13.0.3": {
@@ -66,13 +63,6 @@
       "integrity": "2e4ee4e2118edf1f52165a451e99df6dd73b4f4ea070c864024911a2c0497cba",
       "dependencies": [
         "jsr:@std/async",
-        "npm:@protobuf-ts/runtime",
-        "npm:@protobuf-ts/runtime-rpc"
-      ]
-    },
-    "@signalerdev/rpc@0.0.2": {
-      "integrity": "51d4997206691028d075e719c2ef736ad7d8ae0aeb0adbdc374eac28f6e5f244",
-      "dependencies": [
         "npm:@protobuf-ts/runtime",
         "npm:@protobuf-ts/runtime-rpc"
       ]
@@ -398,13 +388,6 @@
     "@protobuf-ts/runtime@2.9.4": {
       "integrity": "sha512-vHRFWtJJB/SiogWDF0ypoKfRIZ41Kq+G9cEFj6Qm1eQaAhJ1LDFvgZ7Ja4tb3iLOQhz0PaoPnnOijF1qmEqTxg=="
     },
-    "@protobuf-ts/twirp-transport@2.9.4": {
-      "integrity": "sha512-hoLHHVn1GgLyRVxDW9f0QKG24u/T/hLC0D97cV18OLyeC6Ibsvfg6xSSgA9Q/9wtBPI9ntMU/5/XLpICUXDgDQ==",
-      "dependencies": [
-        "@protobuf-ts/runtime",
-        "@protobuf-ts/runtime-rpc"
-      ]
-    },
     "@rollup/rollup-android-arm-eabi@4.24.3": {
       "integrity": "sha512-ufb2CH2KfBWPJok95frEZZ82LtDl0A6QKTa8MoM+cWwDZvVGl5/jNb79pIhRvAalUu+7LD91VYR0nwRD799HkQ=="
     },
@@ -674,9 +657,6 @@
         "loose-envify"
       ]
     },
-    "sdp@3.2.0": {
-      "integrity": "sha512-d7wDPgDV3DDiqulJjKiV2865wKsJ34YI+NDREbm+FySq6WuKOikwyNQcm+doLAZ1O6ltdO0SeKle2xMpN3Brgw=="
-    },
     "semver@6.3.1": {
       "integrity": "sha512-BR7VvDCVHO+q2xBEWskxS6DJE1qRnb7DxzUrogb71CWoSficBxYsiAGd+Kl0mmq/MprG9yArRkyrQxTO6XjMzA=="
     },
@@ -700,29 +680,12 @@
         "rollup"
       ]
     },
-    "webrtc-adapter@9.0.1": {
-      "integrity": "sha512-1AQO+d4ElfVSXyzNVTOewgGT/tAomwwztX/6e3totvyyzXPvXIIuUUjAmyZGbKBKbZOXauuJooZm3g6IuFuiNQ==",
-      "dependencies": [
-        "sdp"
-      ]
-    },
     "yallist@3.1.1": {
       "integrity": "sha512-a4UGQaWPH59mOXUYnAG2ewncQS4i4F43Tv3JoAM+s2VDAmS9NsK8GpDMLrCHPksFT7h3K6TOoUNn2pb7RoXx4g=="
     }
   },
   "workspace": {
     "members": {
-      "client": {
-        "dependencies": [
-          "jsr:@signalerdev/rpc@^0.0.2"
-        ],
-        "packageJson": {
-          "dependencies": [
-            "npm:@protobuf-ts/twirp-transport@^2.9.4",
-            "npm:webrtc-adapter@^9.0.1"
-          ]
-        }
-      },
       "demo": {
         "dependencies": [
           "npm:@deno/vite-plugin@1",
