@@ -10,7 +10,6 @@
     "jsxImportSourceTypes": "@types/react"
   },
   "workspace": [
-    "./client",
-    "./demo"
+    "client"
   ]
 }
