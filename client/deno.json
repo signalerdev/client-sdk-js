@@ -1,11 +1,11 @@
 {
   "name": "@signalerdev/client",
-  "version": "0.0.1",
+  "version": "0.0.2",
   "exports": "./mod.ts",
   "tasks": {
     "publish": "deno publish --allow-slow-types"
   },
   "imports": {
-    "@signalerdev/rpc": "jsr:@signalerdev/rpc@^0.0.1"
+    "@signalerdev/rpc": "jsr:@signalerdev/rpc@^0.0.2"
   }
 }

@@ -1,5 +1,5 @@
 import { TwirpFetchTransport } from "@protobuf-ts/twirp-transport";
-import { Logger, Transport, TunnelClient } from "jsr:@signalerdev/rpc@0.0.1";
+import { Logger, Transport, TunnelClient } from "jsr:@signalerdev/rpc@0.0.2";
 import { Session } from "./session.ts";
 
 export type ISession = Pick<
