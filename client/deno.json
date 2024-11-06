@@ -3,7 +3,7 @@
   "version": "0.0.3",
   "exports": "./mod.ts",
   "tasks": {
-    "publish": "deno run -A build_npm.ts && npx jsr publish --allow-slow-types --dry-run"
+    "publish": "deno run -A build_npm.ts && deno publish --allow-slow-types --dry-run"
   },
   "imports": {
     "@signalerdev/rpc": "jsr:@signalerdev/rpc@^0.0.2"
