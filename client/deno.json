@@ -1,9 +1,9 @@
 {
   "name": "@signalerdev/client",
-  "version": "0.0.2",
+  "version": "0.0.3",
   "exports": "./mod.ts",
   "tasks": {
-    "publish": "deno publish --allow-slow-types"
+    "publish": "deno run -A build_npm.ts && npx jsr publish --allow-slow-types --dry-run"
   },
   "imports": {
     "@signalerdev/rpc": "jsr:@signalerdev/rpc@^0.0.2"

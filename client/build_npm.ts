@@ -15,6 +15,8 @@ await build({
     name: meta.name,
     version: meta.version,
   },
+  // Issue: https://github.com/denoland/dnt/issues/196
+  typeCheck: false,
   compilerOptions: {
     lib: [
       "ES2020",
@@ -25,6 +27,6 @@ await build({
   postBuild() {
     // steps to run after building and before running the tests
     Deno.copyFileSync("../LICENSE", "npm/LICENSE");
-    Deno.copyFileSync("README.md", "npm/README.md");
+    // Deno.copyFileSync("README.md", "npm/README.md");
   },
 });
