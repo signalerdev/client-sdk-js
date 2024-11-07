@@ -331,7 +331,7 @@ export class Session extends RTCPeerConnection {
     this.pendingCandidates = [];
   }
 
-  id() {
+  id(): string {
     return `${this.stream.otherPeerId}:${this.stream.otherConnId}`;
   }
 }
