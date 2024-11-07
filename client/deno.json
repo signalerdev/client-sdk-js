@@ -3,6 +3,7 @@
   "version": "0.0.4",
   "exports": "./mod.ts",
   "tasks": {
+    "build:npm": "deno run -A build_npm.ts",
     "publish:npm": "deno run -A build_npm.ts && cd npm && npm publish --access public",
     "publish:jsr": "deno publish --allow-slow-types"
   },
