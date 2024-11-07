@@ -5,7 +5,7 @@ import {
   SdpKind,
   type Signal,
   type Stream,
-} from "jsr:@signalerdev/rpc@0.0.2";
+} from "./deps.ts";
 
 const ICE_RESTART_MAX_COUNT = 2;
 
