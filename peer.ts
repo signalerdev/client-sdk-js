@@ -5,6 +5,7 @@ import {
   TwirpFetchTransport,
 } from "./deps.ts";
 import { Session } from "./session.ts";
+export { SessionState } from "./session.ts";
 
 export type ISession = Pick<
   Session,
