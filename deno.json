@@ -5,6 +5,9 @@
     "./peer": "./peer.ts"
   },
   "exclude": [],
+  "tasks": {
+    "demo": "cd demo-react && deno run -A server.ts"
+  },
   "compilerOptions": {
     "lib": [
       "ES2020",
