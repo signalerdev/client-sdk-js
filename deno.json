@@ -9,7 +9,13 @@
     "lib": [
       "ES2020",
       "DOM",
-      "DOM.Iterable"
+      "DOM.Iterable",
+      "deno.ns"
     ]
+  },
+  "imports": {
+    "@types/react": "npm:@types/react@^18.3.12",
+    "react": "npm:react@^18.3.1",
+    "react-dom": "npm:react-dom@^18.3.1"
   }
 }
