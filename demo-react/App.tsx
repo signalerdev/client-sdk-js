@@ -25,40 +25,56 @@ export default function App() {
     <div>
       {(!stream || !isLive)
         ? (
-          <>
-            <input
-              type="text"
-              placeholder="your peerId"
-              value={peerId}
-              onChange={(e) => setPeerId(e.target.value)}
-            />
-            <button disabled={!stream} onClick={() => setIsLive(true)}>
-              Go Live
-            </button>
-          </>
+          <form
+            onSubmit={(e) => {
+              e.preventDefault();
+              setIsLive(true);
+            }}
+          >
+            <fieldset role="group">
+              <input
+                type="text"
+                placeholder="Your PeerId"
+                value={peerId}
+                onChange={(e) => setPeerId(e.target.value)}
+              />
+              <input type="submit" disabled={!stream} value="Go Live" />
+            </fieldset>
+          </form>
         )
         : (
-          <>
-            <input
-              type="text"
-              placeholder="other peerId"
-              value={otherPeerId}
-              onChange={(e) => setOtherPeerId(e.target.value)}
-            />
-            <button onClick={() => peer.connect(otherPeerId)}>Connect</button>
-            <button onClick={() => setIsLive(false)}>Stop</button>
-          </>
+          <form
+            onSubmit={(e) => {
+              e.preventDefault();
+              peer.connect(otherPeerId);
+            }}
+          >
+            <fieldset role="group">
+              <input
+                type="text"
+                placeholder="Other PeerId"
+                value={otherPeerId}
+                onChange={(e) => setOtherPeerId(e.target.value)}
+              />
+              <input type="submit" value="Connect" />
+              <button className="secondary" onClick={() => setIsLive(false)}>
+                Stop
+              </button>
+            </fieldset>
+          </form>
         )}
 
-      <VideoContainer stream={stream} loading={false} title="local" />
-      {Object.entries(peer.sessions).map(([id, s]) => (
-        <VideoContainer
-          key={s.key}
-          title={id}
-          stream={s.remoteStream}
-          loading={s.loading}
-        />
-      ))}
+      <div className="grid" role="group">
+        <VideoContainer stream={stream} loading={false} title="local" />
+        {Object.entries(peer.sessions).map(([id, s]) => (
+          <VideoContainer
+            key={s.key}
+            title={id}
+            stream={s.remoteStream}
+            loading={s.loading}
+          />
+        ))}
+      </div>
     </div>
   );
 }
@@ -79,14 +95,13 @@ function VideoContainer(props: VideoContainerProps) {
   }, [props.stream]);
 
   return (
-    <div>
-      <h2>{props.title}</h2>
-      {(props.loading || props.stream === null) && <div>Loading...</div>}
+    <article aria-busy={props.loading || props.stream === null}>
+      <header>{props.title}</header>
       <video
         ref={videoRef}
         autoPlay
-        style={{ width: "300px", height: "auto" }}
+        style={{ width: "auto%", height: "500px", objectFit: "contain" }}
       />
-    </div>
+    </article>
   );
 }

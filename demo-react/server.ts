@@ -20,21 +20,26 @@ const server = Deno.serve(
 
     const code = result.outputFiles[0].text;
     const html = `
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en">
   <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0"  
- />
-    <title>Vite + Deno</title>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="color-scheme" content="light dark">
+    <link
+      rel="stylesheet"
+      href="https://cdn.jsdelivr.net/npm/@picocss/pico@2/css/pico.min.css"
+    >
+    <title>Hello world!</title>
   </head>
   <body>
-    <div id="root"></div>
+    <main class="container" id="root"></main>
     <script type="module">
 ${code}
     </script>
   </body>
-</html>`;
+</html>
+`;
     return new Response(html, {
       headers: { "Content-Type": "text/html; charset=utf-8" },
     });
