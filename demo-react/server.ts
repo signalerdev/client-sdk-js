@@ -26,14 +26,12 @@ const server = Deno.serve(
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <meta name="color-scheme" content="light dark">
-    <link
-      rel="stylesheet"
-      href="https://cdn.jsdelivr.net/npm/@picocss/pico@2/css/pico.min.css"
-    >
+    <link href="https://cdn.jsdelivr.net/npm/beercss@3.7.12/dist/cdn/beer.min.css" rel="stylesheet">
+    <script type="module" src="https://cdn.jsdelivr.net/npm/beercss@3.7.12/dist/cdn/beer.min.js"></script>
     <title>Hello world!</title>
   </head>
   <body>
-    <main class="container" id="root"></main>
+    <main class="responsive max" id="root"></main>
     <script type="module">
 ${code}
     </script>
