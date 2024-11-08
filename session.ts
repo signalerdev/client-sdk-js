@@ -62,14 +62,8 @@ export class Session extends RTCPeerConnection {
 
   constructor(
     private readonly stream: Stream,
+    config: RTCConfiguration,
   ) {
-    const config: RTCConfiguration = {
-      iceTransportPolicy: "all",
-      iceCandidatePoolSize: 0,
-      iceServers: [
-        { urls: "stun:stun.l.google.com:19302" },
-      ],
-    };
     super(config);
 
     this.makingOffer = false;

@@ -23,6 +23,10 @@ export type ISession = Pick<
   | "onstatechanged"
 >;
 
+export interface PeerOptions {
+  extraIceServers: RTCIceServer[];
+}
+
 // Peer is a mediator for signaling and all sessions
 export class Peer {
   private transport: Transport;
@@ -30,7 +34,11 @@ export class Peer {
   public onnewsession = (_s: ISession) => {};
   private sessions: Session[];
 
-  constructor(public readonly peerId: string, baseUrl: string) {
+  constructor(
+    public readonly peerId: string,
+    baseUrl: string,
+    opts?: PeerOptions,
+  ) {
     this.logger = new Logger("peer", { peerId });
     const twirp = new TwirpFetchTransport({
       baseUrl,
@@ -39,6 +47,14 @@ export class Peer {
     const client = new TunnelClient(twirp);
     this.sessions = [];
 
+    const rtcConfig: RTCConfiguration = {
+      iceTransportPolicy: "all",
+      iceCandidatePoolSize: 0,
+      iceServers: [
+        { urls: "stun:stun.l.google.com:19302" },
+        ...(opts?.extraIceServers || []),
+      ],
+    };
     this.transport = new Transport(client, {
       enableDiscovery: false,
       peerId: peerId,
@@ -46,7 +62,7 @@ export class Peer {
       reliableMaxTryCount: 3, // TODO: deprecate this?
     });
     this.transport.onnewstream = (s) => {
-      const sess = new Session(s);
+      const sess = new Session(s, rtcConfig);
       this.sessions.push(sess);
       this.onnewsession(sess);
     };
