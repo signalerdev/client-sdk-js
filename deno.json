@@ -9,7 +9,7 @@
   ],
   "tasks": {
     "demo": "cd demo-react && deno run -A server.ts",
-    "bundle": "curl localhost:8080 > docs/index.html"
+    "bundle": "curl localhost:8080 > public/index.html"
   },
   "compilerOptions": {
     "lib": [
