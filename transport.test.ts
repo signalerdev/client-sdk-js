@@ -1,18 +1,20 @@
 import { assertEquals, assertGreater } from "jsr:@std/assert@1.0.7";
 import { afterEach, describe, it } from "jsr:@std/testing@1.0.4/bdd";
+import { TwirpFetchTransport } from "./deps.ts";
 import {
   delay,
   ReservedConnId,
   Transport,
   type TransportOptions,
 } from "./transport.ts";
-import type {
-  ITunnelClient,
-  Message,
-  RecvReq,
-  RecvResp,
-  SendReq,
-  SendResp,
+import {
+  type ITunnelClient,
+  type Message,
+  type RecvReq,
+  type RecvResp,
+  type SendReq,
+  type SendResp,
+  TunnelClient,
 } from "./rpc/v1/mod.ts";
 import type { UnaryCall } from "@protobuf-ts/runtime-rpc";
 import type { RpcOptions } from "@protobuf-ts/runtime-rpc";
@@ -87,6 +89,19 @@ class MockClient implements ITunnelClient {
   }
 }
 
+function createClient(mock: boolean): ITunnelClient {
+  if (mock) {
+    return new MockClient();
+  }
+
+  const twirp = new TwirpFetchTransport({
+    baseUrl: "http://localhost:3000/twirp",
+    sendJson: false,
+  });
+  const client = new TunnelClient(twirp);
+  return client;
+}
+
 describe("util", () => {
   it("should wait for stream count", async () => {
     let streamCount = 0;
@@ -103,7 +118,7 @@ describe("transport", () => {
 
   it("should receive join", async () => {
     const logger = new Logger("test", {});
-    const client = new MockClient();
+    const client = createClient(true);
     const opts: TransportOptions = {
       enableDiscovery: false,
       peerId: "peerA",

@@ -40,7 +40,7 @@ export class Peer {
     this.logger = new Logger("peer", { peerId });
     const twirp = new TwirpFetchTransport({
       baseUrl,
-      sendJson: true,
+      sendJson: false,
     });
     const client = new TunnelClient(twirp);
     this.sessions = [];
