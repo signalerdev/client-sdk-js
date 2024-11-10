@@ -2,10 +2,8 @@ import { type ISession, Peer, SessionState } from "../peer.ts";
 // @deno-types="@types/react"
 import { useCallback, useRef, useState } from "react";
 
-// const baseUrl = process.env.NODE_ENV === "production"
-//   ? "/twirp"
-//   : "https://localhost/twirp";
 const baseUrl = "https://demo.lukas-coding.us/twirp";
+// const baseUrl = "http://localhost:3000/twirp";
 
 interface SessionProps {
   key: string;
