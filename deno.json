@@ -4,7 +4,9 @@
   "exports": {
     "./peer": "./peer.ts"
   },
-  "exclude": [],
+  "exclude": [
+    "demo-react"
+  ],
   "tasks": {
     "demo": "cd demo-react && deno run -A server.ts"
   },
@@ -17,6 +19,8 @@
     ]
   },
   "imports": {
+    "@protobuf-ts/runtime": "npm:@protobuf-ts/runtime@^2.9.4",
+    "@protobuf-ts/runtime-rpc": "npm:@protobuf-ts/runtime-rpc@^2.9.4",
     "@types/react": "npm:@types/react@^18.3.12",
     "react": "npm:react@^18.3.1",
     "react-dom": "npm:react-dom@^18.3.1"

@@ -1,9 +1,7 @@
-import {
-  Logger,
-  Transport,
-  TunnelClient,
-  TwirpFetchTransport,
-} from "./deps.ts";
+import { TunnelClient } from "./rpc/v1/mod.ts";
+import { TwirpFetchTransport } from "./deps.ts";
+import { Transport } from "./transport.ts";
+import { Logger } from "./logger.ts";
 import { Session } from "./session.ts";
 export { SessionState } from "./session.ts";
 

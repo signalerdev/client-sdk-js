@@ -10,6 +10,8 @@
     "jsr:@signalerdev/rpc@0.0.2": "0.0.2",
     "jsr:@std/assert@0.223": "0.223.0",
     "jsr:@std/assert@0.226": "0.226.0",
+    "jsr:@std/assert@1.0.7": "1.0.7",
+    "jsr:@std/assert@^1.0.7": "1.0.7",
     "jsr:@std/async@1.0.8": "1.0.8",
     "jsr:@std/bytes@0.223": "0.223.0",
     "jsr:@std/bytes@^1.0.2": "1.0.3",
@@ -19,6 +21,7 @@
     "jsr:@std/fs@0.223": "0.223.0",
     "jsr:@std/fs@1": "1.0.5",
     "jsr:@std/fs@~0.229.3": "0.229.3",
+    "jsr:@std/internal@^1.0.5": "1.0.5",
     "jsr:@std/io@0.223": "0.223.0",
     "jsr:@std/path@*": "1.0.8",
     "jsr:@std/path@0.223": "0.223.0",
@@ -27,15 +30,19 @@
     "jsr:@std/path@^1.0.6": "1.0.8",
     "jsr:@std/path@^1.0.7": "1.0.8",
     "jsr:@std/path@~0.225.2": "0.225.2",
+    "jsr:@std/testing@1.0.4": "1.0.4",
     "jsr:@ts-morph/bootstrap@0.24": "0.24.0",
     "jsr:@ts-morph/common@0.24": "0.24.0",
+    "npm:@protobuf-ts/runtime-rpc@2.9.4": "2.9.4",
     "npm:@protobuf-ts/runtime-rpc@^2.9.4": "2.9.4",
+    "npm:@protobuf-ts/runtime@2.9.4": "2.9.4",
     "npm:@protobuf-ts/runtime@^2.9.4": "2.9.4",
     "npm:@protobuf-ts/twirp-transport@2.9.4": "2.9.4",
     "npm:@types/react@^18.3.12": "18.3.12",
     "npm:esbuild@0.20.2": "0.20.2",
     "npm:react-dom@^18.3.1": "18.3.1_react@18.3.1",
-    "npm:react@^18.3.1": "18.3.1"
+    "npm:react@^18.3.1": "18.3.1",
+    "npm:webrtc-adapter@9.0.1": "9.0.1"
   },
   "jsr": {
     "@david/code-block-writer@13.0.3": {
@@ -73,15 +80,15 @@
       "integrity": "2e4ee4e2118edf1f52165a451e99df6dd73b4f4ea070c864024911a2c0497cba",
       "dependencies": [
         "jsr:@std/async",
-        "npm:@protobuf-ts/runtime",
-        "npm:@protobuf-ts/runtime-rpc"
+        "npm:@protobuf-ts/runtime-rpc@^2.9.4",
+        "npm:@protobuf-ts/runtime@^2.9.4"
       ]
     },
     "@signalerdev/rpc@0.0.2": {
       "integrity": "51d4997206691028d075e719c2ef736ad7d8ae0aeb0adbdc374eac28f6e5f244",
       "dependencies": [
-        "npm:@protobuf-ts/runtime",
-        "npm:@protobuf-ts/runtime-rpc"
+        "npm:@protobuf-ts/runtime-rpc@^2.9.4",
+        "npm:@protobuf-ts/runtime@^2.9.4"
       ]
     },
     "@std/assert@0.223.0": {
@@ -89,6 +96,12 @@
     },
     "@std/assert@0.226.0": {
       "integrity": "0dfb5f7c7723c18cec118e080fec76ce15b4c31154b15ad2bd74822603ef75b3"
+    },
+    "@std/assert@1.0.7": {
+      "integrity": "64ce9fac879e0b9f3042a89b3c3f8ccfc9c984391af19e2087513a79d73e28c3",
+      "dependencies": [
+        "jsr:@std/internal"
+      ]
     },
     "@std/async@1.0.8": {
       "integrity": "c057c5211a0f1d12e7dcd111ab430091301b8d64b4250052a79d277383bc3ba7"
@@ -123,6 +136,9 @@
         "jsr:@std/path@^1.0.7"
       ]
     },
+    "@std/internal@1.0.5": {
+      "integrity": "54a546004f769c1ac9e025abd15a76b6671ddc9687e2313b67376125650dc7ba"
+    },
     "@std/io@0.223.0": {
       "integrity": "2d8c3c2ab3a515619b90da2c6ff5ea7b75a94383259ef4d02116b228393f84f1",
       "dependencies": [
@@ -147,6 +163,13 @@
     },
     "@std/path@1.0.8": {
       "integrity": "548fa456bb6a04d3c1a1e7477986b6cffbce95102d0bb447c67c4ee70e0364be"
+    },
+    "@std/testing@1.0.4": {
+      "integrity": "ca1368d720b183f572d40c469bb9faf09643ddd77b54f8b44d36ae6b94940576",
+      "dependencies": [
+        "jsr:@std/assert@^1.0.7",
+        "jsr:@std/internal"
+      ]
     },
     "@ts-morph/bootstrap@0.24.0": {
       "integrity": "a826a2ef7fa8a7c3f1042df2c034d20744d94da2ee32bf29275bcd4dffd3c060",
@@ -317,10 +340,21 @@
       "dependencies": [
         "loose-envify"
       ]
+    },
+    "sdp@3.2.0": {
+      "integrity": "sha512-d7wDPgDV3DDiqulJjKiV2865wKsJ34YI+NDREbm+FySq6WuKOikwyNQcm+doLAZ1O6ltdO0SeKle2xMpN3Brgw=="
+    },
+    "webrtc-adapter@9.0.1": {
+      "integrity": "sha512-1AQO+d4ElfVSXyzNVTOewgGT/tAomwwztX/6e3totvyyzXPvXIIuUUjAmyZGbKBKbZOXauuJooZm3g6IuFuiNQ==",
+      "dependencies": [
+        "sdp"
+      ]
     }
   },
   "workspace": {
     "dependencies": [
+      "npm:@protobuf-ts/runtime-rpc@^2.9.4",
+      "npm:@protobuf-ts/runtime@^2.9.4",
       "npm:@types/react@^18.3.12",
       "npm:react-dom@^18.3.1",
       "npm:react@^18.3.1"

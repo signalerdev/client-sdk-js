@@ -1,11 +1,11 @@
 import {
   type ICECandidate,
-  Logger,
   type MessagePayload,
   SdpKind,
   type Signal,
-  type Stream,
-} from "./deps.ts";
+} from "./rpc/v1/mod.ts";
+import { Logger } from "./logger.ts";
+import type { Stream } from "./transport.ts";
 
 const ICE_RESTART_MAX_COUNT = 2;
 
