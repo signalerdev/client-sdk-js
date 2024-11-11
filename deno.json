@@ -6,7 +6,7 @@
   },
   "tasks": {
     "demo": "cd demo-react && deno run -A server.ts",
-    "bundle": "curl localhost:8080 > public/index.html"
+    "bundle": "cd demo-react && deno run -A bundle.ts"
   },
   "compilerOptions": {
     "lib": [

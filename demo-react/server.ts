@@ -1,9 +1,3 @@
-import * as esbuild from "npm:esbuild@0.20.2";
-// Import the Wasm build on platforms where running subprocesses is not
-// permitted, such as Deno Deploy, or when running without `--allow-run`.
-// import * as esbuild from "https://deno.land/x/esbuild@0.20.2/wasm.js";
-
-import { denoPlugins } from "jsr:@luca/esbuild-deno-loader@^0.11.0";
 import { App, TokenOpts } from "jsr:@signalerdev/server-sdk-js@^0.0.5/deno";
 
 // default values are only used for testing only!!
@@ -16,21 +10,11 @@ const app = new App(
 const server = Deno.serve(
   { hostname: "localhost", port: 8080 },
   async (_request) => {
-    const result = await esbuild.build({
-      plugins: [...denoPlugins()],
-      entryPoints: ["./index.tsx"],
-      bundle: true,
-      minify: true,
-      treeShaking: true,
-      write: false,
-      format: "esm",
-    });
-
-    const code = result.outputFiles[0].text;
     const opts = new TokenOpts();
     opts.subject = "alice";
     opts.groupId = "0";
     console.log(app.createToken(opts));
+    const module = await Deno.readTextFile("./dist/index.js");
 
     const html = `
 <!doctype html>
@@ -46,7 +30,7 @@ const server = Deno.serve(
   <body>
     <main class="responsive max" id="root"></main>
     <script type="module">
-${code}
+${module}
     </script>
   </body>
 </html>
@@ -57,4 +41,3 @@ ${code}
   },
 );
 await server.finished;
-esbuild.stop();
