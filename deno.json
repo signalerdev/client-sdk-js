@@ -4,9 +4,6 @@
   "exports": {
     "./peer": "./peer.ts"
   },
-  "exclude": [
-    "demo-react"
-  ],
   "tasks": {
     "demo": "cd demo-react && deno run -A server.ts",
     "bundle": "curl localhost:8080 > public/index.html"

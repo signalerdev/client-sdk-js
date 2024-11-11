@@ -8,6 +8,8 @@
     "jsr:@luca/esbuild-deno-loader@0.11": "0.11.0",
     "jsr:@signalerdev/rpc@0.0.1": "0.0.1",
     "jsr:@signalerdev/rpc@0.0.2": "0.0.2",
+    "jsr:@signalerdev/server-sdk-js@^0.0.1": "0.0.1",
+    "jsr:@signalerdev/server-sdk-js@^0.0.5": "0.0.5",
     "jsr:@std/assert@0.223": "0.223.0",
     "jsr:@std/assert@0.226": "0.226.0",
     "jsr:@std/assert@1.0.7": "1.0.7",
@@ -15,6 +17,7 @@
     "jsr:@std/async@1.0.8": "1.0.8",
     "jsr:@std/bytes@0.223": "0.223.0",
     "jsr:@std/bytes@^1.0.2": "1.0.3",
+    "jsr:@std/dotenv@*": "0.225.2",
     "jsr:@std/encoding@^1.0.5": "1.0.5",
     "jsr:@std/fmt@0.223": "0.223.0",
     "jsr:@std/fmt@1": "1.0.3",
@@ -91,6 +94,12 @@
         "npm:@protobuf-ts/runtime@^2.9.4"
       ]
     },
+    "@signalerdev/server-sdk-js@0.0.1": {
+      "integrity": "38543bf7c3c9106671ee493e8d4c540a70f150ae1c0d5852cba9508e39c6aee8"
+    },
+    "@signalerdev/server-sdk-js@0.0.5": {
+      "integrity": "a655c3566d588c470e9a130c5740a766e66064050163c1ccddb55e53832ba7cb"
+    },
     "@std/assert@0.223.0": {
       "integrity": "eb8d6d879d76e1cc431205bd346ed4d88dc051c6366365b1af47034b0670be24"
     },
@@ -111,6 +120,9 @@
     },
     "@std/bytes@1.0.3": {
       "integrity": "e5d5b9e685966314e4edb4be60dfc4bd7624a075bfd4ec8109252b4320f76452"
+    },
+    "@std/dotenv@0.225.2": {
+      "integrity": "e2025dce4de6c7bca21dece8baddd4262b09d5187217e231b033e088e0c4dd23"
     },
     "@std/encoding@1.0.5": {
       "integrity": "ecf363d4fc25bd85bd915ff6733a7e79b67e0e7806334af15f4645c569fefc04"

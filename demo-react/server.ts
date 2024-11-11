@@ -4,6 +4,14 @@ import * as esbuild from "npm:esbuild@0.20.2";
 // import * as esbuild from "https://deno.land/x/esbuild@0.20.2/wasm.js";
 
 import { denoPlugins } from "jsr:@luca/esbuild-deno-loader@^0.11.0";
+import { App, TokenOpts } from "jsr:@signalerdev/server-sdk-js@^0.0.5/deno";
+
+// default values are only used for testing only!!
+const app = new App(
+  Deno.env.get("APP_ID") || "347da29c4d3b4d2398237ed99dcd7eb8",
+  Deno.env.get("APP_SECRET") ||
+    "61eb06aa1a3a4ef80dd2a77503e226cc9afb667bed2dde38b31852ac781ea68a",
+);
 
 const server = Deno.serve(
   { hostname: "localhost", port: 8080 },
@@ -19,6 +27,11 @@ const server = Deno.serve(
     });
 
     const code = result.outputFiles[0].text;
+    const opts = new TokenOpts();
+    opts.subject = "alice";
+    opts.groupId = "0";
+    console.log(app.createToken(opts));
+
     const html = `
 <!doctype html>
 <html lang="en">

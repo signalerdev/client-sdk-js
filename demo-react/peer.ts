@@ -38,7 +38,15 @@ export function usePeer(localStream: MediaStream | null) {
   const start = useCallback((peerId: string) => {
     if (peer.current) return;
 
-    const p = new Peer(peerId, baseUrl);
+    const p = new Peer(peerId, baseUrl, {
+      extraIceServers: [
+        {
+          urls: "turn:turn.upfor.xyz:3478",
+          username: "demo",
+          credential: "demo",
+        },
+      ],
+    });
     p.onnewsession = (s) => {
       let start = performance.now();
 
