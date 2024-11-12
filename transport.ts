@@ -42,7 +42,7 @@ class Queue {
   private unreliable: Message[];
   private processing: boolean;
   private readonly logger: Logger;
-  public onmsg = async (_: Message) => {};
+  public onmsg = async (_: Message) => { };
 
   constructor(logger: Logger) {
     this.logger = logger.sub("queue");
@@ -114,8 +114,8 @@ export class Transport {
   public readonly logger: Logger;
   public readonly asleep: typeof defaultAsleep;
   private readonly randUint32: typeof defaultRandUint32;
-  public onnewstream = (_: Stream) => {};
-  public onclosed = (_reason: string) => {};
+  public onnewstream = (_: Stream) => { };
+  public onclosed = (_reason: string) => { };
 
   constructor(
     private readonly client: ITunnelClient,
@@ -149,7 +149,7 @@ export class Transport {
         }, { abort: this.abort.signal, timeout: POLL_TIMEOUT_MS });
 
         // make sure to not block polling loop
-        setTimeout(() => this.handleMessages(resp.response.msgs), 0);
+        queueMicrotask(() => this.handleMessages(resp.response.msgs));
       } catch (err) {
         let reason = "";
         if (err instanceof Error) {
@@ -160,7 +160,7 @@ export class Transport {
         await this.asleep(
           RETRY_DELAY_MS + Math.random() * RETRY_JITTER_MS,
           this.abort.signal,
-        ).catch(() => {});
+        ).catch(() => { });
       }
     }
     this.logger.debug("connection closed");
@@ -261,7 +261,7 @@ export class Transport {
         });
 
         // make sure to not block polling loop
-        setTimeout(() => this.handleMessages(resp.response.msgs), 0);
+        queueMicrotask(() => this.handleMessages(resp.response.msgs));
         return;
       } catch (err) {
         if (err instanceof Error) {
@@ -272,7 +272,7 @@ export class Transport {
         await this.asleep(
           RETRY_DELAY_MS + Math.random() * RETRY_JITTER_MS,
           this.abort.signal,
-        ).catch(() => {});
+        ).catch(() => { });
       }
     }
   }
@@ -288,8 +288,8 @@ export class Stream {
   public readonly peerId: string;
   public readonly connId: number;
   private lastSeqnum: number;
-  public onpayload = async (_: MessagePayload) => {};
-  public onclosed = (_reason: string) => {};
+  public onpayload = async (_: MessagePayload) => { };
+  public onclosed = (_reason: string) => { };
 
   constructor(
     private readonly transport: Transport,
@@ -341,7 +341,7 @@ export class Stream {
       await this.transport.asleep(
         RETRY_DELAY_MS + Math.random() * RETRY_JITTER_MS,
         this.abort.signal,
-      ).catch(() => {});
+      ).catch(() => { });
 
       if (!(seqnum in this.sendbuf)) {
         break;
