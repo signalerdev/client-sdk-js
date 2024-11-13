@@ -53,6 +53,7 @@ const handleAuth = (url: URL): Response => {
 
   console.log({ id });
   const claims = new PeerClaims();
+  claims.groupId = "default";
   claims.peerId = id;
 
   const rule = new FirewallClaims();

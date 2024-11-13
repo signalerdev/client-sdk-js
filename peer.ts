@@ -59,6 +59,7 @@ export class Peer {
     };
     this.transport = new Transport(client, {
       enableDiscovery: false,
+      groupId: opts.groupId,
       peerId: opts.peerId,
       logger: this.logger,
       reliableMaxTryCount: 3, // TODO: deprecate this?
@@ -82,9 +83,9 @@ export class Peer {
     this.sessions = [];
   }
 
-  connect(otherPeerID: string) {
+  connect(otherGroupId: string, otherPeerID: string) {
     // TODO: should keep sending, maybe every second?
-    this.transport.connect(otherPeerID);
+    this.transport.connect(otherGroupId, otherPeerID);
   }
 }
 

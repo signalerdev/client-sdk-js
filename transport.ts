@@ -42,7 +42,7 @@ class Queue {
   private unreliable: Message[];
   private processing: boolean;
   private readonly logger: Logger;
-  public onmsg = async (_: Message) => { };
+  public onmsg = async (_: Message) => {};
 
   constructor(logger: Logger) {
     this.logger = logger.sub("queue");
@@ -98,6 +98,7 @@ class Queue {
 
 export interface TransportOptions {
   readonly enableDiscovery: boolean;
+  readonly groupId: string;
   readonly peerId: string;
   readonly logger: Logger;
   readonly reliableMaxTryCount: number;
@@ -106,6 +107,7 @@ export interface TransportOptions {
 }
 
 export class Transport {
+  public readonly groupId: string;
   public readonly peerId: string;
   public readonly connId: number;
   private readonly info: PeerInfo;
@@ -114,8 +116,8 @@ export class Transport {
   public readonly logger: Logger;
   public readonly asleep: typeof defaultAsleep;
   private readonly randUint32: typeof defaultRandUint32;
-  public onnewstream = (_: Stream) => { };
-  public onclosed = (_reason: string) => { };
+  public onnewstream = (_: Stream) => {};
+  public onclosed = (_reason: string) => {};
 
   constructor(
     private readonly client: ITunnelClient,
@@ -124,17 +126,16 @@ export class Transport {
     this.asleep = opts.asleep || defaultAsleep;
     this.randUint32 = opts.randUint32 || defaultRandUint32;
 
+    this.groupId = opts.groupId;
     this.peerId = opts.peerId;
     this.connId = this.randUint32(ReservedConnId.Max);
     this.info = {
-      enableDiscovery: opts.enableDiscovery,
-      projectId: "",
-      groupId: "",
-      peerId: this.peerId,
       connId: this.connId,
+      enableDiscovery: opts.enableDiscovery,
     };
     this.abort = new AbortController();
     this.logger = opts.logger.sub("transport", {
+      groupId: this.opts.groupId,
       peerId: this.opts.peerId,
       connId: this.connId,
     });
@@ -160,7 +161,7 @@ export class Transport {
         await this.asleep(
           RETRY_DELAY_MS + Math.random() * RETRY_JITTER_MS,
           this.abort.signal,
-        ).catch(() => { });
+        ).catch(() => {});
       }
     }
     this.logger.debug("connection closed");
@@ -215,6 +216,7 @@ export class Transport {
 
         stream = new Stream(
           this,
+          msg.header.groupId,
           msg.header.peerId,
           msg.header.connId,
           this.logger,
@@ -227,7 +229,7 @@ export class Transport {
     }
   }
 
-  async connect(otherPeerId: string) {
+  async connect(otherGroupId: string, otherPeerId: string) {
     const payload: MessagePayload = {
       payloadType: {
         oneofKind: "join",
@@ -235,8 +237,10 @@ export class Transport {
       },
     };
     const header: MessageHeader = {
+      groupId: this.groupId,
       peerId: this.peerId,
       connId: this.connId,
+      otherGroupId: otherGroupId,
       otherPeerId: otherPeerId,
       otherConnId: ReservedConnId.Discovery,
       seqnum: 0,
@@ -249,30 +253,28 @@ export class Transport {
   }
 
   async send(signal: AbortSignal, msg: Message) {
+    this.logger.info("send", { msg });
     // TODO: emit disconnected state
     while (!signal.aborted) {
       try {
-        const resp = await this.client.send({
-          info: this.info,
+        await this.client.send({
           msg,
         }, {
           abort: signal,
           timeout: POLL_TIMEOUT_MS,
         });
-
-        // make sure to not block polling loop
-        queueMicrotask(() => this.handleMessages(resp.response.msgs));
         return;
       } catch (err) {
-        if (err instanceof Error) {
-          this.logger.error(err.message);
-        }
-        this.logger.warn("failed to send, retrying", { err });
-
-        await this.asleep(
-          RETRY_DELAY_MS + Math.random() * RETRY_JITTER_MS,
-          this.abort.signal,
-        ).catch(() => { });
+        throw err;
+        // if (err instanceof Error) {
+        //   this.logger.error(err.message);
+        // }
+        // this.logger.warn("failed to send, retrying", { err });
+        //
+        // await this.asleep(
+        //   RETRY_DELAY_MS + Math.random() * RETRY_JITTER_MS,
+        //   this.abort.signal,
+        // ).catch(() => {});
       }
     }
   }
@@ -285,22 +287,26 @@ export class Stream {
   private abort: AbortController;
   public recvq: Queue;
   public sendbuf: Record<string, Message>;
+  public readonly groupId: string;
   public readonly peerId: string;
   public readonly connId: number;
   private lastSeqnum: number;
-  public onpayload = async (_: MessagePayload) => { };
-  public onclosed = (_reason: string) => { };
+  public onpayload = async (_: MessagePayload) => {};
+  public onclosed = (_reason: string) => {};
 
   constructor(
     private readonly transport: Transport,
+    public readonly otherGroupId: string,
     public readonly otherPeerId: string,
     public readonly otherConnId: number,
     logger: Logger,
   ) {
     this.logger = logger.sub("stream", {
+      otherGroupId,
       otherPeerId,
       otherConnId,
     });
+    this.groupId = transport.groupId;
     this.peerId = transport.peerId;
     this.connId = transport.connId;
     this.abort = new AbortController();
@@ -313,8 +319,10 @@ export class Stream {
   async send(payload: MessagePayload, reliable: boolean) {
     const msg: Message = {
       header: {
+        groupId: this.transport.groupId,
         peerId: this.transport.peerId,
         connId: this.transport.connId,
+        otherGroupId: this.otherGroupId,
         otherPeerId: this.otherPeerId,
         otherConnId: this.otherConnId,
         seqnum: 0,
@@ -341,7 +349,7 @@ export class Stream {
       await this.transport.asleep(
         RETRY_DELAY_MS + Math.random() * RETRY_JITTER_MS,
         this.abort.signal,
-      ).catch(() => { });
+      ).catch(() => {});
 
       if (!(seqnum in this.sendbuf)) {
         break;

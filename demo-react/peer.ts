@@ -2,8 +2,9 @@ import { createPeer, type ISession, type Peer, SessionState } from "../peer.ts";
 // @deno-types="@types/react"
 import { useCallback, useRef, useState } from "react";
 
-const baseUrl = "https://demo.lukas-coding.us/twirp";
-// const baseUrl = "http://localhost:3000/twirp";
+const BASE_URL = "https://demo.lukas-coding.us/twirp";
+// const BASE_URL = "http://localhost:3000/twirp";
+const DEFAULT_GROUP = "default";
 
 interface SessionProps {
   key: string;
@@ -43,9 +44,9 @@ export function usePeer(localStream: MediaStream | null) {
     });
     const token = await resp.text();
     const p = await createPeer({
-      baseUrl,
+      baseUrl: BASE_URL,
       peerId,
-      groupId: "",
+      groupId: DEFAULT_GROUP,
       token,
       iceServers: [
         { urls: "stun:stun.l.google.com:19302" },
@@ -112,7 +113,7 @@ export function usePeer(localStream: MediaStream | null) {
   }, []);
 
   const connect = useCallback((otherPeerId: string) => {
-    if (peer.current) peer.current.connect(otherPeerId);
+    if (peer.current) peer.current.connect(DEFAULT_GROUP, otherPeerId);
   }, []);
 
   return {
