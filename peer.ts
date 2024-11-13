@@ -1,5 +1,10 @@
 import { TunnelClient } from "./rpc/v1/mod.ts";
-import { TwirpFetchTransport } from "./deps.ts";
+import {
+  type RpcOptions,
+  type RpcTransport,
+  TwirpFetchTransport,
+  type UnaryCall,
+} from "./deps.ts";
 import { Transport } from "./transport.ts";
 import { Logger } from "./logger.ts";
 import { Session } from "./session.ts";
@@ -22,7 +27,11 @@ export type ISession = Pick<
 >;
 
 export interface PeerOptions {
-  extraIceServers: RTCIceServer[];
+  baseUrl: string;
+  groupId: string;
+  peerId: string;
+  token: string;
+  iceServers: RTCIceServer[];
 }
 
 // Peer is a mediator for signaling and all sessions
@@ -31,31 +40,26 @@ export class Peer {
   private readonly logger: Logger;
   public onnewsession = (_s: ISession) => {};
   private sessions: Session[];
+  public readonly peerId: string;
 
   constructor(
-    public readonly peerId: string,
-    baseUrl: string,
-    opts?: PeerOptions,
+    transport: RpcTransport,
+    opts: PeerOptions,
   ) {
-    this.logger = new Logger("peer", { peerId });
-    const twirp = new TwirpFetchTransport({
-      baseUrl,
-      sendJson: false,
-    });
-    const client = new TunnelClient(twirp);
+    this.peerId = opts.peerId;
+    this.logger = new Logger("peer", { peerId: this.peerId });
+
+    const client = new TunnelClient(transport);
     this.sessions = [];
 
     const rtcConfig: RTCConfiguration = {
       iceTransportPolicy: "all",
       iceCandidatePoolSize: 0,
-      iceServers: [
-        { urls: "stun:stun.l.google.com:19302" },
-        ...(opts?.extraIceServers || []),
-      ],
+      iceServers: opts.iceServers,
     };
     this.transport = new Transport(client, {
       enableDiscovery: false,
-      peerId: peerId,
+      peerId: opts.peerId,
       logger: this.logger,
       reliableMaxTryCount: 3, // TODO: deprecate this?
     });
@@ -82,4 +86,29 @@ export class Peer {
     // TODO: should keep sending, maybe every second?
     this.transport.connect(otherPeerID);
   }
+}
+
+export async function createPeer(opts: PeerOptions): Promise<Peer> {
+  // TODO: add hook for refresh token
+  const twirp = new TwirpFetchTransport({
+    baseUrl: opts.baseUrl,
+    sendJson: false,
+    interceptors: [
+      {
+        // adds auth header to unary requests
+        interceptUnary(next, method, input, options: RpcOptions): UnaryCall {
+          if (!options.meta) {
+            options.meta = {};
+          }
+          options.meta["Authorization"] = `Bearer ${token}`;
+          return next(method, input, options);
+        },
+      },
+    ],
+  });
+  const token = opts.token;
+
+  // TODO: enhance iceServers with STUN and TURN servers
+  const peer = new Peer(twirp, opts);
+  return peer;
 }

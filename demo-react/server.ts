@@ -1,26 +1,26 @@
 import * as path from "jsr:@std/path";
-import { App, TokenOpts } from "jsr:@signalerdev/server-sdk-js@^0.0.5/deno";
+import {
+  App,
+  AppOpts,
+  FirewallClaims,
+  PeerClaims,
+} from "jsr:@signalerdev/server-sdk-js@^0.0.9/deno";
 
 // default values are only used for testing only!!
-const app = new App(
-  Deno.env.get("APP_ID") || "347da29c4d3b4d2398237ed99dcd7eb8",
-  Deno.env.get("APP_SECRET") ||
-    "61eb06aa1a3a4ef80dd2a77503e226cc9afb667bed2dde38b31852ac781ea68a",
-);
+const opts = new AppOpts();
+opts.appId = Deno.env.get("APP_ID") || "app_e66Jb4zkt66nvlUKMRTSZ";
+opts.appSecret = Deno.env.get("APP_SECRET") ||
+  "sk_7317736f8a8d075a03cdea6b6b76094ae424cbf619a8e9273e633daed3f55c38";
+opts.projectId = "p_kYhfp69c7HPEfE38lg5bz";
+const app = new App(opts);
 
 const dirname = path.dirname(path.fromFileUrl(import.meta.url));
 const bundlePath = path.join(dirname, "dist", "index.js");
 
-const server = Deno.serve(
-  { hostname: "localhost", port: 8080 },
-  async (_request) => {
-    const opts = new TokenOpts();
-    opts.subject = "alice";
-    opts.groupId = "0";
-    console.log(app.createToken(opts));
-    const module = await Deno.readTextFile(bundlePath);
+const handleHtml = async (): Promise<Response> => {
+  const module = await Deno.readTextFile(bundlePath);
 
-    const html = `
+  const html = `
 <!doctype html>
 <html lang="en">
   <head>
@@ -39,9 +39,51 @@ ${module}
   </body>
 </html>
 `;
-    return new Response(html, {
-      headers: { "Content-Type": "text/html; charset=utf-8" },
-    });
+  return new Response(html, {
+    headers: { "Content-Type": "text/html; charset=utf-8" },
+  });
+};
+
+const handleAuth = (url: URL): Response => {
+  const id = url.searchParams.get("id");
+
+  if (!id) {
+    throw new Error("invalid arguments");
+  }
+
+  console.log({ id });
+  const claims = new PeerClaims();
+  claims.peerId = id;
+
+  const rule = new FirewallClaims();
+  rule.groupId = "*";
+  rule.peerId = "*";
+  claims.allowIncoming0 = rule;
+  claims.allowOutgoing0 = rule;
+
+  const token = app.createToken(claims, 3600);
+
+  const resp = new Response(token, {
+    headers: {
+      "Content-Type": "text/plain; charset=utf-8",
+    },
+  });
+
+  return resp;
+};
+
+const server = Deno.serve(
+  { hostname: "localhost", port: 8080 },
+  (req) => {
+    const url = new URL(req.url);
+
+    console.log(url.pathname);
+
+    if (url.pathname === "/auth") {
+      return handleAuth(url);
+    } else {
+      return handleHtml();
+    }
   },
 );
 await server.finished;

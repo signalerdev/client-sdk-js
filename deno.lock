@@ -10,6 +10,9 @@
     "jsr:@signalerdev/rpc@0.0.2": "0.0.2",
     "jsr:@signalerdev/server-sdk-js@^0.0.1": "0.0.1",
     "jsr:@signalerdev/server-sdk-js@^0.0.5": "0.0.5",
+    "jsr:@signalerdev/server-sdk-js@^0.0.7": "0.0.7",
+    "jsr:@signalerdev/server-sdk-js@^0.0.8": "0.0.8",
+    "jsr:@signalerdev/server-sdk-js@^0.0.9": "0.0.9",
     "jsr:@std/assert@0.223": "0.223.0",
     "jsr:@std/assert@0.226": "0.226.0",
     "jsr:@std/assert@1.0.7": "1.0.7",
@@ -99,6 +102,15 @@
     },
     "@signalerdev/server-sdk-js@0.0.5": {
       "integrity": "a655c3566d588c470e9a130c5740a766e66064050163c1ccddb55e53832ba7cb"
+    },
+    "@signalerdev/server-sdk-js@0.0.7": {
+      "integrity": "cc65c5ee9db87ad9147ac45c1a9cd868016a0e91d83c3ac67cc1a2e08f86174b"
+    },
+    "@signalerdev/server-sdk-js@0.0.8": {
+      "integrity": "5e342f725b8b6027e9321a866bfb8fa5595ce269234580175f01488ecfae399a"
+    },
+    "@signalerdev/server-sdk-js@0.0.9": {
+      "integrity": "3ebdaab6c8ef546f728f6f72220f20a2a82dd8abeb48a6e7ae3271ef1f862ef3"
     },
     "@std/assert@0.223.0": {
       "integrity": "eb8d6d879d76e1cc431205bd346ed4d88dc051c6366365b1af47034b0670be24"

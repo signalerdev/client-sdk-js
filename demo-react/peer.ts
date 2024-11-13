@@ -1,4 +1,4 @@
-import { type ISession, Peer, SessionState } from "../peer.ts";
+import { createPeer, type ISession, type Peer, SessionState } from "../peer.ts";
 // @deno-types="@types/react"
 import { useCallback, useRef, useState } from "react";
 
@@ -35,11 +35,20 @@ export function usePeer(localStream: MediaStream | null) {
     });
   }, []);
 
-  const start = useCallback((peerId: string) => {
+  const start = useCallback(async (peerId: string) => {
     if (peer.current) return;
 
-    const p = new Peer(peerId, baseUrl, {
-      extraIceServers: [
+    const resp = await fetch(`/auth?id=${peerId}`, {
+      method: "GET",
+    });
+    const token = await resp.text();
+    const p = await createPeer({
+      baseUrl,
+      peerId,
+      groupId: "",
+      token,
+      iceServers: [
+        { urls: "stun:stun.l.google.com:19302" },
         {
           urls: "turn:turn.upfor.xyz:3478",
           username: "demo",
@@ -47,6 +56,7 @@ export function usePeer(localStream: MediaStream | null) {
         },
       ],
     });
+
     p.onnewsession = (s) => {
       let start = performance.now();
 
