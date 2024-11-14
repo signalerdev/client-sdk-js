@@ -1,13 +1,13 @@
 import { TunnelClient } from "./rpc/v1/mod.ts";
 import {
   type RpcOptions,
-  type RpcTransport,
   TwirpFetchTransport,
   type UnaryCall,
 } from "./deps.ts";
 import { Transport } from "./transport.ts";
 import { Logger } from "./logger.ts";
 import { Session } from "./session.ts";
+import { ITunnelClient } from "./rpc/v1/tunnel.client.ts";
 export { SessionState } from "./session.ts";
 
 export type ISession = Pick<
@@ -43,13 +43,11 @@ export class Peer {
   public readonly peerId: string;
 
   constructor(
-    transport: RpcTransport,
+    client: ITunnelClient,
     opts: PeerOptions,
   ) {
     this.peerId = opts.peerId;
     this.logger = new Logger("peer", { peerId: this.peerId });
-
-    const client = new TunnelClient(transport);
     this.sessions = [];
 
     const rtcConfig: RTCConfiguration = {
@@ -107,9 +105,17 @@ export async function createPeer(opts: PeerOptions): Promise<Peer> {
       },
     ],
   });
+  const client = new TunnelClient(twirp);
   const token = opts.token;
 
-  // TODO: enhance iceServers with STUN and TURN servers
-  const peer = new Peer(twirp, opts);
+  const resp = await client.prepare({});
+  const iceServers = { ...opts.iceServers };
+  for (const s of resp.response.iceServers) {
+    iceServers.push({
+      urls: s.urls,
+      username: s.username,
+    });
+  }
+  const peer = new Peer(client, { ...opts, "iceServers": iceServers });
   return peer;
 }
