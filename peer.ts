@@ -109,7 +109,7 @@ export async function createPeer(opts: PeerOptions): Promise<Peer> {
   const token = opts.token;
 
   const resp = await client.prepare({});
-  const iceServers = { ...opts.iceServers };
+  const iceServers = [...(opts.iceServers || [])];
   for (const s of resp.response.iceServers) {
     iceServers.push({
       urls: s.urls,
