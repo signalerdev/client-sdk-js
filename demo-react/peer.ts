@@ -48,14 +48,7 @@ export function usePeer(localStream: MediaStream | null) {
       peerId,
       groupId: DEFAULT_GROUP,
       token,
-      iceServers: [
-        { urls: "stun:stun.l.google.com:19302" },
-        {
-          urls: "turn:turn.upfor.xyz:3478",
-          username: "demo",
-          credential: "demo",
-        },
-      ],
+      iceServers: [],
     });
 
     p.onnewsession = (s) => {

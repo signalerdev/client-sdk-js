@@ -114,6 +114,7 @@ export async function createPeer(opts: PeerOptions): Promise<Peer> {
     iceServers.push({
       urls: s.urls,
       username: s.username,
+      credential: s.credential,
     });
   }
   const peer = new Peer(client, { ...opts, "iceServers": iceServers });
