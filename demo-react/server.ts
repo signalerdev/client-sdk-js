@@ -4,14 +4,13 @@ import {
   AppOpts,
   FirewallClaims,
   PeerClaims,
-} from "jsr:@signalerdev/server-sdk-js@^0.0.9/deno";
+} from "jsr:@signalerdev/server-sdk-js@^0.0.10/deno";
 
 // default values are only used for testing only!!
 const opts = new AppOpts();
 opts.appId = Deno.env.get("APP_ID") || "app_e66Jb4zkt66nvlUKMRTSZ";
 opts.appSecret = Deno.env.get("APP_SECRET") ||
   "sk_7317736f8a8d075a03cdea6b6b76094ae424cbf619a8e9273e633daed3f55c38";
-opts.projectId = "p_kYhfp69c7HPEfE38lg5bz";
 const app = new App(opts);
 
 const dirname = path.dirname(path.fromFileUrl(import.meta.url));

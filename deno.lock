@@ -9,6 +9,7 @@
     "jsr:@signalerdev/rpc@0.0.1": "0.0.1",
     "jsr:@signalerdev/rpc@0.0.2": "0.0.2",
     "jsr:@signalerdev/server-sdk-js@^0.0.1": "0.0.1",
+    "jsr:@signalerdev/server-sdk-js@^0.0.10": "0.0.10",
     "jsr:@signalerdev/server-sdk-js@^0.0.5": "0.0.5",
     "jsr:@signalerdev/server-sdk-js@^0.0.7": "0.0.7",
     "jsr:@signalerdev/server-sdk-js@^0.0.8": "0.0.8",
@@ -111,6 +112,9 @@
     },
     "@signalerdev/server-sdk-js@0.0.9": {
       "integrity": "3ebdaab6c8ef546f728f6f72220f20a2a82dd8abeb48a6e7ae3271ef1f862ef3"
+    },
+    "@signalerdev/server-sdk-js@0.0.10": {
+      "integrity": "1ee762f4d35654a14583f482f17a89b375ae7f33d12fe7fba1365eb9cde5bb84"
     },
     "@std/assert@0.223.0": {
       "integrity": "eb8d6d879d76e1cc431205bd346ed4d88dc051c6366365b1af47034b0670be24"
