@@ -362,9 +362,7 @@ export class Stream {
           reliable,
         });
 
-        // TODO: SOMEHOW THIS KEEPS MESSSING UP CONNECTION
-        this.logger.debug(`${this.otherPeerId}:${this.otherConnId} is staled`);
-        // this.close(`${this.otherPeerId}:${this.otherConnId} is staled`);
+        this.close(`${this.otherPeerId}:${this.otherConnId} is staled`);
         break;
       }
 

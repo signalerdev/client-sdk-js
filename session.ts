@@ -57,6 +57,7 @@ export class Session extends RTCPeerConnection {
   private state: SessionState;
   private generationCounter: number;
   private iceRestartCount: number;
+  public closeReason?: string;
 
   public onstatechanged = (_from: SessionState, _to: SessionState) => {};
 
@@ -77,6 +78,7 @@ export class Session extends RTCPeerConnection {
     this.generationCounter = 0;
     this.iceRestartCount = 0;
     stream.onpayload = this.handleMessage.bind(this);
+    stream.onclosed = (reason) => this.close(reason);
 
     this.oniceconnectionstatechange = () => {
       this.logger.debug("iceconnectionstate changed", {
@@ -159,11 +161,12 @@ export class Session extends RTCPeerConnection {
     }, true);
   }
 
-  override close() {
+  override close(reason?: string) {
     if (this.abort.signal.aborted) return;
-    this.abort.abort();
+    this.abort.abort(reason);
     this.logger.debug("closing");
     super.close();
+    this.closeReason = reason;
     // TODO: handle graceful shutdown to other peer
     this.updateState(SessionState.Closed);
   }
