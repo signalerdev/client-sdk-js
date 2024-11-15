@@ -93,7 +93,7 @@ export class Session extends RTCPeerConnection {
     this.iceRestartCount = 0;
     this.lastIceRestart = 0;
     this.timers = [];
-    stream.onpayload = this.handleMessage.bind(this);
+    stream.onpayload = (msg) => this.handleMessage(msg);
     stream.onclosed = (reason) => this.close(reason);
 
     this.oniceconnectionstatechange = () => {
@@ -134,7 +134,7 @@ export class Session extends RTCPeerConnection {
           break;
       }
     };
-    this.onnegotiationneeded = this.handleNegotiation.bind(this);
+    this.onnegotiationneeded = () => this.handleNegotiation();
     this.onicecandidate = ({ candidate }) => {
       const ice: ICECandidate = {
         candidate: "",
