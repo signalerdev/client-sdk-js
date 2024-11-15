@@ -293,6 +293,15 @@ export class Transport {
       ).catch(() => {});
     } while (!signal.aborted && !this.abort.signal.aborted);
   }
+
+  onstreamclosed(closed: Stream) {
+    // TODO: use cooldown period to fully close. Otherwise, there's a chance that the other peer is
+    // still sending some messages. In which case, we need to still ignore for some time until completely quiet.
+
+    // streams are created by transport. Thus, its object reference is the same.
+    this.streams = this.streams.filter((s) => s != closed);
+    this.logger.debug("stream has been closed", { streams: this.streams });
+  }
 }
 
 // Stream allows multiplexing on top of Transport, and
@@ -361,8 +370,10 @@ export class Stream {
     while (!this.abort.signal.aborted) {
       await this.transport.send(this.abort.signal, msg);
 
+      // TODO: with 1 second, the resending causes the stream reconnection to fail.
+      // stress test this more.
       await this.transport.asleep(
-        RETRY_DELAY_MS + Math.random() * RETRY_JITTER_MS,
+        5 * RETRY_DELAY_MS + Math.random() * RETRY_JITTER_MS,
         this.abort.signal,
       ).catch(() => {});
 
@@ -388,11 +399,6 @@ export class Stream {
 
   private async handleMessage(msg: Message) {
     const payload = msg.payload!.payloadType;
-    this.logger.debug("received message", {
-      msg,
-      seqnum: msg.header?.seqnum,
-      payloadType: payload.oneofKind,
-    });
     switch (payload.oneofKind) {
       case "ack":
         this.handleAck(payload.ack);
@@ -434,6 +440,7 @@ export class Stream {
   }
 
   async close(reason?: string) {
+    if (this.abort.signal.aborted) return;
     reason = reason || "session is closed";
     // make sure to give a chance to send a message
     await this.send({
@@ -443,6 +450,7 @@ export class Stream {
       },
     }, false);
     this.abort.abort(reason);
+    this.transport.onstreamclosed(this);
     this.onclosed(reason);
     this.logger.debug("sent bye to the other peer", { reason });
   }

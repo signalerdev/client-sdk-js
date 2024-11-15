@@ -8,6 +8,16 @@ import { Logger } from "./logger.ts";
 import type { Stream } from "./transport.ts";
 
 const ICE_RESTART_MAX_COUNT = 2;
+const ICE_RESTART_DEBOUNCE_DELAY_MS = 5000;
+
+function toIceCandidate(ice: ICECandidate): RTCIceCandidateInit {
+  return {
+    candidate: ice.candidate,
+    sdpMid: ice.sdpMid,
+    sdpMLineIndex: ice.sdpMLineIndex,
+    usernameFragment: ice.password,
+  };
+}
 
 function toSDPType(kind: SdpKind): RTCSdpType {
   switch (kind) {
@@ -57,6 +67,8 @@ export class Session extends RTCPeerConnection {
   private state: SessionState;
   private generationCounter: number;
   private iceRestartCount: number;
+  private lastIceRestart: number;
+  private timers: number[];
   public closeReason?: string;
 
   public onstatechanged = (_from: SessionState, _to: SessionState) => {};
@@ -69,6 +81,8 @@ export class Session extends RTCPeerConnection {
 
     this.makingOffer = false;
     this.pendingCandidates = [];
+    // Higher is impolite. [0-15] is reserved. One of the reserved value can be used
+    // for implementing fixed "polite" role for lite ICE.
     this.impolite = this.stream.connId > this.stream.otherConnId;
     this.abort = new AbortController();
     this.state = SessionState.New;
@@ -77,6 +91,8 @@ export class Session extends RTCPeerConnection {
     });
     this.generationCounter = 0;
     this.iceRestartCount = 0;
+    this.lastIceRestart = 0;
+    this.timers = [];
     stream.onpayload = this.handleMessage.bind(this);
     stream.onclosed = (reason) => this.close(reason);
 
@@ -87,6 +103,7 @@ export class Session extends RTCPeerConnection {
       });
     };
 
+    let start = performance.now();
     this.onconnectionstatechange = () => {
       this.logger.debug("connectionstate changed", {
         "connectionstate": this.connectionState,
@@ -94,14 +111,18 @@ export class Session extends RTCPeerConnection {
       });
       switch (this.connectionState) {
         case "connecting":
+          start = performance.now();
           this.updateState(SessionState.Connecting);
           break;
-        case "connected":
-          this.logger.debug("connection has recovered");
+        case "connected": {
+          const elapsed = performance.now() - start;
+          this.logger.debug(`it took ${elapsed}ms to connect`);
           this.updateState(SessionState.Connected);
           this.iceRestartCount = 0;
           break;
+        }
         case "disconnected":
+          this.triggerIceRestart();
           this.updateState(SessionState.Disconnected);
           break;
         case "failed":
@@ -142,11 +163,25 @@ export class Session extends RTCPeerConnection {
   private triggerIceRestart() {
     // the impolite offer will trigger the polite peer's to also restart Ice
     if (!this.impolite) return;
+
+    const elapsed = performance.now() - this.lastIceRestart;
+    if (elapsed < ICE_RESTART_DEBOUNCE_DELAY_MS) {
+      // schedule ice restart after some delay;
+      const delay = ICE_RESTART_DEBOUNCE_DELAY_MS - elapsed;
+      const timerId = setTimeout(() => {
+        this.triggerIceRestart();
+        this.timers = this.timers.filter((v) => v === timerId);
+      }, delay);
+      return;
+    }
+
+    if (this.connectionState === "connected") return;
     if (this.iceRestartCount >= ICE_RESTART_MAX_COUNT) this.close();
-    this.logger.debug("connection failed, restarting ICE");
+    this.logger.debug("triggered ICE restart");
     this.restartIce();
     this.generationCounter++;
     this.iceRestartCount++;
+    this.lastIceRestart = performance.now();
   }
 
   start() {
@@ -165,7 +200,12 @@ export class Session extends RTCPeerConnection {
   override close(reason?: string) {
     if (this.abort.signal.aborted) return;
     this.abort.abort(reason);
+    for (const timer of this.timers) {
+      clearTimeout(timer);
+    }
+    this.timers = [];
     this.logger.debug("closing");
+    this.stream.close();
     super.close();
     this.closeReason = reason;
     this.updateState(SessionState.Closed);
@@ -234,31 +274,32 @@ export class Session extends RTCPeerConnection {
       return;
     }
 
+    const msg = signal.data;
     if (signal.generationCounter > this.generationCounter) {
       // Sync generationCounter so this peer can reset its state machine
       // to start accepting new offers
-      this.logger.debug("detected mismatch generationCounter, restarting ICE", {
+      this.logger.debug("detected new generationCounter", {
         otherGenerationCounter: signal.generationCounter,
         generationCounter: this.generationCounter,
+        msg,
       });
+
+      if (msg.oneofKind === "iceCandidate") {
+        const ice = toIceCandidate(msg.iceCandidate);
+        this.pendingCandidates.push(ice);
+        this.logger.warn(
+          "expecting an offer but got ice candidates during an ICE restart, adding to pending.",
+          { ice, msg },
+        );
+        return;
+      }
+
       this.generationCounter = signal.generationCounter;
-      // TODO: should we add guard for adding candidates? It's possible for ICE candidates
-      // to arrive before the offer with ICE restart flag.
-      this.restartIce();
     }
 
-    const msg = signal.data;
     if (msg.oneofKind === "iceCandidate") {
-      const ice = msg.iceCandidate;
-      const candidate: RTCIceCandidateInit = {
-        candidate: ice.candidate,
-        sdpMid: ice.sdpMid,
-        sdpMLineIndex: ice.sdpMLineIndex,
-        usernameFragment: ice.password,
-      };
-
-      this.logger.debug(`received candidate: ${ice.candidate}`);
-      this.pendingCandidates.push(candidate);
+      const ice = toIceCandidate(msg.iceCandidate);
+      this.pendingCandidates.push(ice);
       await this.checkPendingCandidates();
 
       return;
@@ -305,19 +346,19 @@ export class Session extends RTCPeerConnection {
   }
 
   async checkPendingCandidates() {
-    const readyStates: RTCIceConnectionState[] = [
+    const readyStates: RTCPeerConnectionState[] = [
       "connected",
-      "checking",
       "new",
       "disconnected",
-      "completed",
+      "failed",
     ];
     if (
-      !readyStates.includes(this.iceConnectionState) ||
+      !readyStates.includes(this.connectionState) ||
       !this.remoteDescription
     ) {
       this.logger.debug("wait for adding pending candidates", {
         iceConnectionState: this.iceConnectionState,
+        connectionState: this.connectionState,
         remoteDescription: this.remoteDescription,
         pendingCandidates: this.pendingCandidates.length,
       });

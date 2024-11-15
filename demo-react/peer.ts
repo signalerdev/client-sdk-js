@@ -52,8 +52,6 @@ export function usePeer(localStream: MediaStream | null) {
     });
 
     p.onnewsession = (s) => {
-      let start = performance.now();
-
       s.ontrack = ({ streams }) => {
         console.log("ontrack", streams[0]);
         update(s, (p) => p.remoteStream = streams[0]);
@@ -61,15 +59,6 @@ export function usePeer(localStream: MediaStream | null) {
 
       s.onstatechanged = (_, state) => {
         console.log("state changed", state);
-        if (state === SessionState.Connected) {
-          const elapsed = performance.now() - start;
-          console.log(`it took ${elapsed}ms to connect`);
-        }
-
-        if (state === SessionState.Disconnected) {
-          start = performance.now();
-        }
-
         update(s, (p) => {
           p.loading = state !== SessionState.Connected;
         });
