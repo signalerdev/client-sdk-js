@@ -11,6 +11,7 @@ import type { Logger } from "./logger.ts";
 const POLL_TIMEOUT_MS = 60000;
 const RETRY_DELAY_MS = 1000;
 const RETRY_JITTER_MS = 100;
+const MAX_RELIABLE_RETRY_COUNT = 5;
 
 export enum ReservedConnId {
   Discovery = 0,
@@ -105,7 +106,6 @@ export interface TransportOptions {
   readonly groupId: string;
   readonly peerId: string;
   readonly logger: Logger;
-  readonly reliableMaxTryCount: number;
   readonly asleep?: typeof defaultAsleep;
   readonly randUint32?: typeof defaultRandUint32;
   readonly isRecoverable?: typeof defaultIsRecoverable;
@@ -354,7 +354,7 @@ export class Stream {
     this.lastSeqnum++;
     msg.header!.seqnum = this.lastSeqnum;
     this.sendbuf[msg.header!.seqnum] = msg;
-    const resendLimit = this.transport.opts.reliableMaxTryCount;
+    const resendLimit = MAX_RELIABLE_RETRY_COUNT;
     let tryCount = resendLimit;
     const seqnum = msg.header!.seqnum;
 

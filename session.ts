@@ -102,7 +102,6 @@ export class Session extends RTCPeerConnection {
           this.iceRestartCount = 0;
           break;
         case "disconnected":
-          this.triggerIceRestart();
           this.updateState(SessionState.Disconnected);
           break;
         case "failed":
@@ -141,6 +140,8 @@ export class Session extends RTCPeerConnection {
   }
 
   private triggerIceRestart() {
+    // the impolite offer will trigger the polite peer's to also restart Ice
+    if (!this.impolite) return;
     if (this.iceRestartCount >= ICE_RESTART_MAX_COUNT) this.close();
     this.logger.debug("connection failed, restarting ICE");
     this.restartIce();
@@ -228,6 +229,11 @@ export class Session extends RTCPeerConnection {
   }
 
   async handleSignal(signal: Signal) {
+    if (signal.generationCounter < this.generationCounter) {
+      this.logger.warn("detected staled generationCounter signals, ignoring");
+      return;
+    }
+
     if (signal.generationCounter > this.generationCounter) {
       // Sync generationCounter so this peer can reset its state machine
       // to start accepting new offers
@@ -236,6 +242,8 @@ export class Session extends RTCPeerConnection {
         generationCounter: this.generationCounter,
       });
       this.generationCounter = signal.generationCounter;
+      // TODO: should we add guard for adding candidates? It's possible for ICE candidates
+      // to arrive before the offer with ICE restart flag.
       this.restartIce();
     }
 

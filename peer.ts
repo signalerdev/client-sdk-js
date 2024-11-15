@@ -62,7 +62,6 @@ export class Peer {
       groupId: opts.groupId,
       peerId: opts.peerId,
       logger: this.logger,
-      reliableMaxTryCount: 3, // TODO: deprecate this?
       isRecoverable,
     });
     this.transport.onnewstream = (s) => {
