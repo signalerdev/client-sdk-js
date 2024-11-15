@@ -1,4 +1,4 @@
-import { TunnelClient } from "./rpc/v1/mod.ts";
+import { type ITunnelClient, TunnelClient } from "./rpc/v1/mod.ts";
 import {
   RpcError,
   type RpcOptions,
@@ -9,7 +9,6 @@ import {
 import { Transport } from "./transport.ts";
 import { Logger } from "./logger.ts";
 import { Session } from "./session.ts";
-import { ITunnelClient } from "./rpc/v1/tunnel.client.ts";
 export { SessionState } from "./session.ts";
 
 export type ISession = Pick<

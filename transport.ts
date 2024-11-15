@@ -37,6 +37,9 @@ const defaultRandUint32 = (
 ) => (Math.floor(Math.random() * ((2 ** 32) - reserved)) + reserved);
 const defaultIsRecoverable = (_err: Error) => true;
 
+// This is a processing queue that can handle unreliable and reliable messages.
+// The processing prioritizes unreliable messages over reliable messages.
+// Reliable messages will be always deduplicated, unreliable messages will not be deduped.
 class Queue {
   private map: Map<number, [number, Message]>;
   private emitted: Map<number, [number, Message]>;
@@ -154,12 +157,13 @@ export class Transport {
         }, { abort: this.abort.signal, timeout: POLL_TIMEOUT_MS });
 
         // make sure to not block polling loop
-        queueMicrotask(() => this.handleMessages(resp.response.msgs));
+        new Promise(() => this.handleMessages(resp.response.msgs));
       } catch (err) {
         let reason = "";
         if (err instanceof Error) {
           reason = err.message;
           if (!this.isRecoverable(err)) {
+            this.logger.debug("unrecoverable error, force closing", { err });
             this.close(reason);
             return;
           }
@@ -175,12 +179,12 @@ export class Transport {
     this.logger.debug("connection closed");
   }
 
-  close(reason?: string) {
+  async close(reason?: string) {
     reason = reason || "transport is closed";
+    await Promise.all(this.streams.map((s) => s.close(reason)));
+    // Give a chance for graceful shutdown before aborting the connection
     this.abort.abort(reason);
-    for (const s of this.streams) {
-      s.close(reason);
-    }
+    this.logger.debug("transport is now closed", { reason });
     this.streams = [];
   }
 
@@ -189,7 +193,6 @@ export class Transport {
       if (this.abort.signal.aborted) return;
       if (!msg.header) continue;
 
-      // TODO: maybe handle this on server
       if (
         msg.header.otherConnId >= ReservedConnId.Max &&
         msg.header.otherConnId != this.connId
@@ -261,9 +264,10 @@ export class Transport {
   }
 
   async send(signal: AbortSignal, msg: Message) {
-    this.logger.info("send", { msg });
-    // TODO: emit disconnected state
-    while (!signal.aborted) {
+    // In certain cases such as sending a fire-and-forget bye message,
+    // the client will race between aborting and sending the signal.
+    // do..while solves the race by making sure to send the message once.
+    do {
       try {
         await this.client.send({
           msg,
@@ -281,13 +285,13 @@ export class Transport {
           }
         }
         this.logger.warn("failed to send, retrying", { err });
-
-        await this.asleep(
-          RETRY_DELAY_MS + Math.random() * RETRY_JITTER_MS,
-          this.abort.signal,
-        ).catch(() => {});
       }
-    }
+
+      await this.asleep(
+        RETRY_DELAY_MS + Math.random() * RETRY_JITTER_MS,
+        this.abort.signal,
+      ).catch(() => {});
+    } while (!signal.aborted && !this.abort.signal.aborted);
   }
 }
 
@@ -393,6 +397,9 @@ export class Stream {
       case "ack":
         this.handleAck(payload.ack);
         break;
+      case "bye":
+        this.close("received bye from other peer");
+        break;
       case undefined:
         break;
       default: {
@@ -426,9 +433,17 @@ export class Stream {
     }
   }
 
-  close(reason?: string) {
+  async close(reason?: string) {
     reason = reason || "session is closed";
+    // make sure to give a chance to send a message
+    await this.send({
+      payloadType: {
+        oneofKind: "bye",
+        bye: {},
+      },
+    }, false);
     this.abort.abort(reason);
     this.onclosed(reason);
+    this.logger.debug("sent bye to the other peer", { reason });
   }
 }

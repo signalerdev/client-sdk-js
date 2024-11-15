@@ -167,7 +167,6 @@ export class Session extends RTCPeerConnection {
     this.logger.debug("closing");
     super.close();
     this.closeReason = reason;
-    // TODO: handle graceful shutdown to other peer
     this.updateState(SessionState.Closed);
   }
 
