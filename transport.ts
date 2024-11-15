@@ -35,6 +35,7 @@ const defaultAsleep = delay;
 const defaultRandUint32 = (
   reserved: number,
 ) => (Math.floor(Math.random() * ((2 ** 32) - reserved)) + reserved);
+const defaultIsRecoverable = (_err: Error) => true;
 
 class Queue {
   private map: Map<number, [number, Message]>;
@@ -104,6 +105,7 @@ export interface TransportOptions {
   readonly reliableMaxTryCount: number;
   readonly asleep?: typeof defaultAsleep;
   readonly randUint32?: typeof defaultRandUint32;
+  readonly isRecoverable?: typeof defaultIsRecoverable;
 }
 
 export class Transport {
@@ -116,6 +118,7 @@ export class Transport {
   public readonly logger: Logger;
   public readonly asleep: typeof defaultAsleep;
   private readonly randUint32: typeof defaultRandUint32;
+  private readonly isRecoverable: typeof defaultIsRecoverable;
   public onnewstream = (_: Stream) => {};
   public onclosed = (_reason: string) => {};
 
@@ -125,6 +128,7 @@ export class Transport {
   ) {
     this.asleep = opts.asleep || defaultAsleep;
     this.randUint32 = opts.randUint32 || defaultRandUint32;
+    this.isRecoverable = opts.isRecoverable || defaultIsRecoverable;
 
     this.groupId = opts.groupId;
     this.peerId = opts.peerId;
@@ -155,6 +159,10 @@ export class Transport {
         let reason = "";
         if (err instanceof Error) {
           reason = err.message;
+          if (!this.isRecoverable(err)) {
+            this.close(reason);
+            return;
+          }
         }
 
         this.logger.error("failed to poll", { reason });
@@ -265,16 +273,19 @@ export class Transport {
         });
         return;
       } catch (err) {
-        throw err;
-        // if (err instanceof Error) {
-        //   this.logger.error(err.message);
-        // }
-        // this.logger.warn("failed to send, retrying", { err });
-        //
-        // await this.asleep(
-        //   RETRY_DELAY_MS + Math.random() * RETRY_JITTER_MS,
-        //   this.abort.signal,
-        // ).catch(() => {});
+        if (err instanceof Error) {
+          const reason = err.message;
+          if (!this.isRecoverable(err)) {
+            this.close(reason);
+            return;
+          }
+        }
+        this.logger.warn("failed to send, retrying", { err });
+
+        await this.asleep(
+          RETRY_DELAY_MS + Math.random() * RETRY_JITTER_MS,
+          this.abort.signal,
+        ).catch(() => {});
       }
     }
   }

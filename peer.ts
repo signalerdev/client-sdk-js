@@ -1,6 +1,8 @@
 import { TunnelClient } from "./rpc/v1/mod.ts";
 import {
+  RpcError,
   type RpcOptions,
+  TwirpErrorCode,
   TwirpFetchTransport,
   type UnaryCall,
 } from "./deps.ts";
@@ -45,6 +47,7 @@ export class Peer {
   constructor(
     client: ITunnelClient,
     opts: PeerOptions,
+    isRecoverable: (_err: Error) => boolean,
   ) {
     this.peerId = opts.peerId;
     this.logger = new Logger("peer", { peerId: this.peerId });
@@ -61,6 +64,7 @@ export class Peer {
       peerId: opts.peerId,
       logger: this.logger,
       reliableMaxTryCount: 3, // TODO: deprecate this?
+      isRecoverable,
     });
     this.transport.onnewstream = (s) => {
       const sess = new Session(s, rtcConfig);
@@ -85,6 +89,25 @@ export class Peer {
     // TODO: should keep sending, maybe every second?
     this.transport.connect(otherGroupId, otherPeerID);
   }
+}
+
+const TWIRP_FATAL_ERRORS: string[] = [
+  TwirpErrorCode[TwirpErrorCode.permission_denied],
+  TwirpErrorCode[TwirpErrorCode.invalid_argument],
+  TwirpErrorCode[TwirpErrorCode.aborted],
+  TwirpErrorCode[TwirpErrorCode.bad_route],
+  TwirpErrorCode[TwirpErrorCode.dataloss],
+  TwirpErrorCode[TwirpErrorCode.malformed],
+  TwirpErrorCode[TwirpErrorCode.not_found],
+  TwirpErrorCode[TwirpErrorCode.unauthenticated],
+];
+
+function isTwirpRecoverable(err: Error): boolean {
+  if (!(err instanceof RpcError)) {
+    return true;
+  }
+
+  return !TWIRP_FATAL_ERRORS.includes(err.code);
 }
 
 export async function createPeer(opts: PeerOptions): Promise<Peer> {
@@ -117,6 +140,10 @@ export async function createPeer(opts: PeerOptions): Promise<Peer> {
       credential: s.credential,
     });
   }
-  const peer = new Peer(client, { ...opts, "iceServers": iceServers });
+  const peer = new Peer(
+    client,
+    { ...opts, "iceServers": iceServers },
+    isTwirpRecoverable,
+  );
   return peer;
 }

@@ -6,4 +6,8 @@ export type {
   RpcTransport,
   UnaryCall,
 } from "npm:@protobuf-ts/runtime-rpc@2.9.4";
-export { TwirpFetchTransport } from "npm:@protobuf-ts/twirp-transport@2.9.4";
+export { RpcError } from "npm:@protobuf-ts/runtime-rpc@2.9.4";
+export {
+  TwirpErrorCode,
+  TwirpFetchTransport,
+} from "npm:@protobuf-ts/twirp-transport@2.9.4";
