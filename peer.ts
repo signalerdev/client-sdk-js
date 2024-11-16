@@ -9,22 +9,20 @@ import {
 import { Transport } from "./transport.ts";
 import { Logger } from "./logger.ts";
 import { Session } from "./session.ts";
-export { SessionState } from "./session.ts";
 
 export type ISession = Pick<
   Session,
   | "addTrack"
   | "removeTrack"
-  | "ontrack"
+  | "addEventListener"
   | "getReceivers"
   | "getSenders"
-  | "ondatachannel"
   | "createDataChannel"
+  | "connectionState"
   // abstraction starts here
   | "start"
   | "close"
   | "id"
-  | "onstatechanged"
 >;
 
 export interface PeerOptions {

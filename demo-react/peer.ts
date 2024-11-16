@@ -1,4 +1,4 @@
-import { createPeer, type ISession, type Peer, SessionState } from "../peer.ts";
+import { createPeer, type ISession, type Peer } from "../peer.ts";
 // @deno-types="@types/react"
 import { useCallback, useRef, useState } from "react";
 
@@ -53,24 +53,28 @@ export function usePeer(localStream: MediaStream | null) {
     });
 
     p.onnewsession = (s) => {
-      s.ontrack = ({ streams }) => {
+      s.addEventListener("track", ({ streams }) => {
         console.log("ontrack", streams[0]);
-        update(s, (p) => p.remoteStream = streams[0]);
-      };
-
-      s.onstatechanged = (_, state) => {
-        console.log("state changed", state);
         update(s, (p) => {
-          p.loading = state !== SessionState.Connected;
+          p.remoteStream = streams[0];
         });
-        if (state === SessionState.Closed) {
+      });
+
+      s.addEventListener("connectionstatechange", () => {
+        console.log(s.connectionState);
+        const loading = s.connectionState !== "connected";
+        update(s, (p) => {
+          p.loading = loading;
+        });
+
+        if (s.connectionState === "closed") {
           setSessions((prev) => {
             const newSessions = { ...prev };
             delete newSessions[s.id()];
             return newSessions;
           });
         }
-      };
+      });
 
       if (localStream) {
         for (const track of localStream.getTracks()) {
@@ -78,10 +82,11 @@ export function usePeer(localStream: MediaStream | null) {
         }
       }
 
+      s.start(); // decide to accept or reject
       update(s, () => {});
     };
-    p.start();
     peer.current = p;
+    p.start();
 
     return () => {
       p.stop();

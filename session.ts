@@ -49,29 +49,17 @@ function fromSDPType(t: RTCSdpType): SdpKind {
   }
 }
 
-export enum SessionState {
-  New = "new",
-  Initialized = "initialized",
-  Connecting = "connecting",
-  Connected = "connected",
-  Disconnected = "disconnected",
-  Closed = "closed",
-}
-
 export class Session extends RTCPeerConnection {
   private makingOffer: boolean;
   private impolite: boolean;
   private pendingCandidates: RTCIceCandidateInit[];
   public readonly logger: Logger;
   private abort: AbortController;
-  private state: SessionState;
   private generationCounter: number;
   private iceRestartCount: number;
   private lastIceRestart: number;
   private timers: number[];
   public closeReason?: string;
-
-  public onstatechanged = (_from: SessionState, _to: SessionState) => {};
 
   constructor(
     private readonly stream: Stream,
@@ -85,7 +73,6 @@ export class Session extends RTCPeerConnection {
     // for implementing fixed "polite" role for lite ICE.
     this.impolite = this.stream.connId > this.stream.otherConnId;
     this.abort = new AbortController();
-    this.state = SessionState.New;
     this.logger = new Logger("session", {
       role: this.impolite ? "impolite" : "polite",
     });
@@ -112,25 +99,20 @@ export class Session extends RTCPeerConnection {
       switch (this.connectionState) {
         case "connecting":
           start = performance.now();
-          this.updateState(SessionState.Connecting);
           break;
         case "connected": {
           const elapsed = performance.now() - start;
           this.logger.debug(`it took ${elapsed}ms to connect`);
-          this.updateState(SessionState.Connected);
           this.iceRestartCount = 0;
           break;
         }
         case "disconnected":
           this.triggerIceRestart();
-          this.updateState(SessionState.Disconnected);
           break;
         case "failed":
           this.triggerIceRestart();
-          this.updateState(SessionState.Disconnected);
           break;
         case "closed":
-          this.updateState(SessionState.Closed);
           break;
       }
     };
@@ -184,10 +166,6 @@ export class Session extends RTCPeerConnection {
     this.lastIceRestart = performance.now();
   }
 
-  start() {
-    this.updateState(SessionState.Initialized);
-  }
-
   sendSignal(signal: Omit<Signal, "generationCounter">) {
     this.stream.send({
       payloadType: {
@@ -195,6 +173,10 @@ export class Session extends RTCPeerConnection {
         signal: { ...signal, generationCounter: this.generationCounter },
       },
     }, true);
+  }
+
+  start() {
+    this.handleNegotiation();
   }
 
   override close(reason?: string) {
@@ -206,21 +188,13 @@ export class Session extends RTCPeerConnection {
     this.timers = [];
     this.logger.debug("closing");
     this.stream.close();
-    super.close();
     this.closeReason = reason;
-    this.updateState(SessionState.Closed);
-  }
+    super.close();
 
-  updateState(to: SessionState) {
-    if (to == this.state) {
-      return;
-    }
-
-    const from = this.state;
-    this.state = to;
-    if (this.onstatechanged) {
-      this.onstatechanged(from, to);
-    }
+    // RTCPeerConnection will not emit closed connection. This is a polyfill to get around it.
+    // https://stackoverflow.com/questions/66297347/why-does-calling-rtcpeerconnection-close-not-send-closed-event
+    const closeEvent = new Event("connectionstatechange");
+    this.dispatchEvent(closeEvent);
   }
 
   async handleNegotiation() {
@@ -263,7 +237,7 @@ export class Session extends RTCPeerConnection {
         this.close();
         break;
       case "join":
-        await this.handleNegotiation();
+        // nothing to do here. SDK consumer needs to manually trigger the start
         break;
     }
   }
