@@ -15,6 +15,7 @@ export type ISession = Pick<
   | "addTrack"
   | "removeTrack"
   | "addEventListener"
+  | "removeEventListener"
   | "getReceivers"
   | "getSenders"
   | "createDataChannel"
