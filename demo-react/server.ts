@@ -1,4 +1,5 @@
 import * as path from "jsr:@std/path";
+import { serveDir } from "jsr:@std/http/file-server";
 import {
   App,
   AppOpts,
@@ -14,34 +15,6 @@ opts.appSecret = Deno.env.get("APP_SECRET") ||
 const app = new App(opts);
 
 const dirname = path.dirname(path.fromFileUrl(import.meta.url));
-const bundlePath = path.join(dirname, "dist", "index.js");
-
-const handleHtml = async (): Promise<Response> => {
-  const module = await Deno.readTextFile(bundlePath);
-
-  const html = `
-<!doctype html>
-<html lang="en">
-  <head>
-    <meta charset="utf-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1">
-    <meta name="color-scheme" content="light dark">
-    <link href="https://cdn.jsdelivr.net/npm/beercss@3.7.12/dist/cdn/beer.min.css" rel="stylesheet">
-    <script type="module" src="https://cdn.jsdelivr.net/npm/beercss@3.7.12/dist/cdn/beer.min.js"></script>
-    <title>Hello world!</title>
-  </head>
-  <body>
-    <main class="responsive max" id="root"></main>
-    <script type="module">
-${module}
-    </script>
-  </body>
-</html>
-`;
-  return new Response(html, {
-    headers: { "Content-Type": "text/html; charset=utf-8" },
-  });
-};
 
 const handleAuth = (url: URL): Response => {
   const id = url.searchParams.get("id");
@@ -76,14 +49,15 @@ const server = Deno.serve(
   { hostname: "localhost", port: 8080 },
   (req) => {
     const url = new URL(req.url);
-
     console.log(url.pathname);
 
     if (url.pathname === "/auth") {
       return handleAuth(url);
-    } else {
-      return handleHtml();
     }
+
+    return serveDir(req, {
+      fsRoot: "dist",
+    });
   },
 );
 await server.finished;

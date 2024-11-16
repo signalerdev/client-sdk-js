@@ -5,6 +5,7 @@ import { useCallback, useRef, useState } from "react";
 const BASE_URL = "https://demo.lukas-coding.us/twirp";
 // const BASE_URL = "http://localhost:3000/twirp";
 const DEFAULT_GROUP = "default";
+const DEFAULT_CONNECT_TIMEOUT_MS = 3000;
 
 interface SessionProps {
   key: string;
@@ -95,7 +96,13 @@ export function usePeer(localStream: MediaStream | null) {
   }, []);
 
   const connect = useCallback((otherPeerId: string) => {
-    if (peer.current) peer.current.connect(DEFAULT_GROUP, otherPeerId);
+    if (peer.current) {
+      peer.current.connect(
+        DEFAULT_GROUP,
+        otherPeerId,
+        DEFAULT_CONNECT_TIMEOUT_MS,
+      );
+    }
   }, []);
 
   return {

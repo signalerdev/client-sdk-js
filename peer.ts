@@ -83,9 +83,8 @@ export class Peer {
     this.sessions = [];
   }
 
-  connect(otherGroupId: string, otherPeerID: string) {
-    // TODO: should keep sending, maybe every second?
-    this.transport.connect(otherGroupId, otherPeerID);
+  connect(otherGroupId: string, otherPeerID: string, timeoutMs: number) {
+    return this.transport.connect(otherGroupId, otherPeerID, timeoutMs);
   }
 }
 

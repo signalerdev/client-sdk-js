@@ -10,10 +10,12 @@ await esbuild.build({
   entryPoints: ["./index.tsx"],
   outfile: "./dist/index.js",
   bundle: true,
-  minify: true,
-  treeShaking: true,
+  minify: false,
+  treeShaking: false,
+  sourcemap: "inline",
   write: true,
   format: "esm",
+  target: "chrome109 edge128 firefox115 ios15.6 opera112 safari15.6".split(" "),
 });
 
 esbuild.stop();

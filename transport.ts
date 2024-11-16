@@ -207,6 +207,7 @@ export class Transport {
       let stream: Stream | null = null;
       for (const s of this.streams) {
         if (
+          msg.header.groupId === s.otherGroupId &&
           msg.header.peerId === s.otherPeerId &&
           msg.header.connId === s.otherConnId
         ) {
@@ -240,7 +241,7 @@ export class Transport {
     }
   }
 
-  async connect(otherGroupId: string, otherPeerId: string) {
+  async connect(otherGroupId: string, otherPeerId: string, timeoutMs: number) {
     const payload: MessagePayload = {
       payloadType: {
         oneofKind: "join",
@@ -257,10 +258,28 @@ export class Transport {
       seqnum: 0,
       reliable: false,
     };
-    await this.send(this.abort.signal, {
-      header,
-      payload,
-    });
+
+    const start = performance.now();
+
+    while ((performance.now() - start) < timeoutMs) {
+      await this.send(this.abort.signal, {
+        header,
+        payload,
+      });
+      await this.asleep(
+        RETRY_DELAY_MS + Math.random() * RETRY_JITTER_MS,
+        this.abort.signal,
+      ).catch(() => {});
+
+      const found = this.streams.find((s) =>
+        s.otherGroupId === otherGroupId && s.otherPeerId === otherPeerId
+      );
+      if (found) {
+        return;
+      }
+    }
+
+    throw new Error("connect failed with a timeout");
   }
 
   async send(signal: AbortSignal, msg: Message) {
@@ -367,6 +386,7 @@ export class Stream {
     let tryCount = resendLimit;
     const seqnum = msg.header!.seqnum;
 
+    // TODO: abort when generation counter doesn't match
     while (!this.abort.signal.aborted) {
       await this.transport.send(this.abort.signal, msg);
 
