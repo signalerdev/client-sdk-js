@@ -77,13 +77,15 @@ export default function App() {
 
       <main className="responsive max grid">
         <VideoContainer
+          className="s12 m6 no-padding"
           stream={stream}
           loading={false}
-          title="local"
+          title={peerId ? `${peerId} (me)` : "me"}
         />
         {Object.entries(peer.sessions).map(([id, s]) => (
           <VideoContainer
             key={s.key}
+            className="s12 m6 no-padding"
             title={id}
             stream={s.remoteStream}
             loading={s.loading}
@@ -98,6 +100,7 @@ interface VideoContainerProps {
   title: string;
   stream: MediaStream | null;
   loading: boolean;
+  className: string;
 }
 
 function VideoContainer(props: VideoContainerProps) {
@@ -111,10 +114,10 @@ function VideoContainer(props: VideoContainerProps) {
 
   const loading = props.loading || props.stream === null;
   return (
-    <article className="s12 m6 no-padding">
+    <article className={props.className}>
       {loading ? <progress className="circle large"></progress> : (
         <video
-          className="responsive"
+          className="responsive max"
           ref={videoRef}
           autoPlay
         />
