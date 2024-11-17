@@ -1,9 +1,8 @@
 {
   "name": "@signalerdev/client",
-  "main": "dist/index.cjs.js",
-  "module": "dist/index.esm.js",
-  "browser": "dist/index.umd.js",
-  "types": "dist/index.d.ts",
+  "version": "0.0.11",
+  "module": "dist/index.mjs",
+  "types": "dist/index.d.mts",
   "scripts": {
     "gen": "protoc --ts_out=. --ts_opt=client_generic --proto_path rpc/v1 ./rpc/v1/tunnel.proto",
     "build": "tsup",
@@ -24,6 +23,7 @@
     "@protobuf-ts/runtime": "^2.9.4",
     "@protobuf-ts/runtime-rpc": "^2.9.4",
     "@protobuf-ts/twirp-transport": "^2.9.4",
+    "@signalerdev/client": "^0.0.11",
     "webrtc-adapter": "^9.0.1"
   },
   "devDependencies": {
@@ -37,7 +37,6 @@
       "index.ts"
     ],
     "format": [
-      "cjs",
       "esm"
     ],
     "dts": true,

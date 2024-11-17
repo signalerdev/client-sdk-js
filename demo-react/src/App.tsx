@@ -1,35 +1,131 @@
-import { useState } from 'react'
-import reactLogo from './assets/react.svg'
-import viteLogo from '/vite.svg'
-import './App.css'
+import { useEffect, useRef, useState } from "react";
+import { usePeer } from "./peer.ts";
 
-function App() {
-  const [count, setCount] = useState(0)
+export default function App() {
+  const [peerId, setPeerId] = useState("");
+  const [otherPeerId, setOtherPeerId] = useState("");
+  const [stream, setStream] = useState<MediaStream | null>(null);
+  const [isLive, setIsLive] = useState(false);
+  const peer = usePeer(stream);
+
+  useEffect(() => {
+    (async () => {
+      const s = await navigator.mediaDevices.getUserMedia({ video: true });
+      setStream(s);
+    })();
+  }, []);
+
+  useEffect(() => {
+    if (isLive) peer.start(peerId);
+    else peer.stop();
+  }, [isLive, peerId, peer]);
 
   return (
     <>
-      <div>
-        <a href="https://vite.dev" target="_blank">
-          <img src={viteLogo} className="logo" alt="Vite logo" />
-        </a>
-        <a href="https://react.dev" target="_blank">
-          <img src={reactLogo} className="logo react" alt="React logo" />
-        </a>
-      </div>
-      <h1>Vite + React</h1>
-      <div className="card">
-        <button onClick={() => setCount((count) => count + 1)}>
-          count is {count}
-        </button>
-        <p>
-          Edit <code>src/App.tsx</code> and save to test HMR
-        </p>
-      </div>
-      <p className="read-the-docs">
-        Click on the Vite and React logos to learn more
-      </p>
+      <nav className="bottom">
+        {(!stream || !isLive)
+          ? (
+            <form
+              onSubmit={(e) => {
+                e.preventDefault();
+                setIsLive(true);
+              }}
+              className="responsive"
+            >
+              <nav className="center-align">
+                <div className="field small border round">
+                  <input
+                    size={6}
+                    type="text"
+                    placeholder="You"
+                    value={peerId}
+                    onChange={(e) => setPeerId(e.target.value)}
+                  />
+                </div>
+                <button type="submit" disabled={!stream} value="Go Live">
+                  Go Live
+                </button>
+              </nav>
+            </form>
+          )
+          : (
+            <form
+              onSubmit={(e) => {
+                e.preventDefault();
+                peer.connect(otherPeerId);
+              }}
+            >
+              <nav className="max center-align">
+                <div className="field small border round">
+                  <input
+                    size={6}
+                    type="text"
+                    placeholder="Other"
+                    value={otherPeerId}
+                    onChange={(e) => setOtherPeerId(e.target.value)}
+                  />
+                </div>
+                <button type="submit">Connect</button>
+                <button className="secondary" onClick={() => setIsLive(false)}>
+                  Stop
+                </button>
+              </nav>
+            </form>
+          )}
+      </nav>
+
+      <main className="responsive max grid">
+        <VideoContainer
+          className="s12 m6 no-padding"
+          stream={stream}
+          loading={false}
+          title={peerId ? `${peerId} (me)` : "me"}
+        />
+        {Object.entries(peer.sessions).map(([id, s]) => (
+          <VideoContainer
+            key={s.key}
+            className="s12 m6 no-padding"
+            title={id}
+            stream={s.remoteStream}
+            loading={s.loading}
+          />
+        ))}
+      </main>
     </>
-  )
+  );
 }
 
-export default App
+interface VideoContainerProps {
+  title: string;
+  stream: MediaStream | null;
+  loading: boolean;
+  className: string;
+}
+
+function VideoContainer(props: VideoContainerProps) {
+  const videoRef = useRef<HTMLVideoElement | null>(null);
+
+  useEffect(() => {
+    if (videoRef.current) {
+      videoRef.current.srcObject = props.stream;
+    }
+  }, [props.stream]);
+
+  const loading = props.loading || props.stream === null;
+  return (
+    <article className={props.className}>
+      {loading ? <progress className="circle large"></progress> : (
+        <video
+          className="responsive max"
+          ref={videoRef}
+          autoPlay
+        />
+      )}
+      <div className="absolute bottom left right padding white-text">
+        <nav>
+          <h5>{props.title}</h5>
+        </nav>
+      </div>
+    </article>
+  );
+}
