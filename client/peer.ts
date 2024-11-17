@@ -47,6 +47,7 @@ export class Peer {
     this.sessions = [];
 
     const rtcConfig: RTCConfiguration = {
+      bundlePolicy: "balanced",
       iceTransportPolicy: "all",
       iceCandidatePoolSize: 0,
       iceServers: opts.iceServers,

@@ -83,15 +83,15 @@ export class Session extends RTCPeerConnection {
     stream.onpayload = (msg) => this.handleMessage(msg);
     stream.onclosed = (reason) => this.close(reason);
 
-    this.oniceconnectionstatechange = () => {
+    this.addEventListener("iceconnectionstatechange", () => {
       this.logger.debug("iceconnectionstate changed", {
         "connectionstate": this.connectionState,
         "iceconnectionstate": this.iceConnectionState,
       });
-    };
+    });
 
     let start = performance.now();
-    this.onconnectionstatechange = () => {
+    this.addEventListener("connectionstatechange", () => {
       this.logger.debug("connectionstate changed", {
         "connectionstate": this.connectionState,
         "iceconnectionstate": this.iceConnectionState,
@@ -99,6 +99,10 @@ export class Session extends RTCPeerConnection {
       switch (this.connectionState) {
         case "connecting":
           start = performance.now();
+          // setTimeout(() => {
+          //   console.log("add empty candidate");
+          //   this.addIceCandidate();
+          // }, 3000);
           break;
         case "connected": {
           const elapsed = performance.now() - start;
@@ -115,9 +119,9 @@ export class Session extends RTCPeerConnection {
         case "closed":
           break;
       }
-    };
-    this.onnegotiationneeded = () => this.handleNegotiation();
-    this.onicecandidate = ({ candidate }) => {
+    });
+    this.addEventListener("negotiationneeded", this.handleNegotiation.bind(this));
+    this.addEventListener("icecandidate", ({ candidate }) => {
       const ice: ICECandidate = {
         candidate: "",
         sdpMLineIndex: 0,
@@ -139,8 +143,10 @@ export class Session extends RTCPeerConnection {
           iceCandidate: ice,
         },
       });
-    };
+    });
   }
+
+
 
   private triggerIceRestart() {
     // the impolite offer will trigger the polite peer's to also restart Ice
