@@ -29,7 +29,7 @@ jobs:
           node-version: lts/*
 
       - name: Install step
-        run: "npm install"
+        run: "cd demo-react && npm install"
 
       - name: Build step
         run: "cd demo-react && npm run build"
