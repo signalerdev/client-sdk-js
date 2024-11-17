@@ -1,24 +1,22 @@
-// import { assertEquals, assertGreater } from "jsr:@std/assert@1.0.7";
-// import { afterEach, describe, it } from "jsr:@std/testing@1.0.4/bdd";
-// import { TwirpFetchTransport } from "./deps.ts";
+// import { afterEach, describe, it } from "vitest";
+// import { TwirpFetchTransport } from "@protobuf-ts/twirp-transport";
 // import {
 //   delay,
 //   ReservedConnId,
 //   Transport,
 //   type TransportOptions,
-// } from "./transport.ts";
+// } from "./transport";
 // import {
-//   type ITunnelClient,
 //   type Message,
 //   type RecvReq,
 //   type RecvResp,
 //   type SendReq,
 //   type SendResp,
-//   TunnelClient,
-// } from "./rpc/v1/mod.ts";
+// } from "./tunnel";
+// import { type ITunnelClient, TunnelClient } from "./tunnel.client";
 // import type { UnaryCall } from "@protobuf-ts/runtime-rpc";
 // import type { RpcOptions } from "@protobuf-ts/runtime-rpc";
-// import { Logger } from "./logger.ts";
+// import { Logger } from "./logger";
 //
 // async function waitFor(
 //   conditionFn: () => boolean | Promise<boolean>,
@@ -123,7 +121,6 @@
 //       enableDiscovery: false,
 //       peerId: "peerA",
 //       logger,
-//       reliableMaxTryCount: 3,
 //       asleep: (ms, opts) => delay(ms / 100, opts), // speedup by 100x
 //     };
 //     const peerA = new Transport(client, opts);
