@@ -1,8 +1,20 @@
 {
   "name": "@signalerdev/client",
   "version": "0.0.11",
+  "type": "module",
+  "main": "./dist/index.cjs",
   "module": "dist/index.mjs",
   "types": "dist/index.d.mts",
+  "exports": {
+    "import": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    },
+    "require": {
+      "types": "./dist/index.d.cts",
+      "require": "./dist/index.cjs"
+    }
+  },
   "scripts": {
     "gen": "protoc --ts_out=. --ts_opt=client_generic --proto_path rpc/v1 ./rpc/v1/tunnel.proto",
     "build": "tsup",
@@ -39,7 +51,8 @@
       "index.ts"
     ],
     "format": [
-      "esm"
+      "esm",
+      "cjs"
     ],
     "dts": true,
     "minify": true,
