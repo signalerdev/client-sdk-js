@@ -1,8 +1,13 @@
 {
   "name": "@signalerdev/client",
-  "version": "0.0.9",
+  "version": "0.0.10",
   "exports": {
     "./peer": "./peer.ts"
+  },
+  "publish": {
+    "exclude": [
+      "demo-react"
+    ]
   },
   "tasks": {
     "demo": "cd demo-react && deno run -A server.ts",
