@@ -188,7 +188,7 @@ export class Transport {
     this.streams = [];
   }
 
-  private handleMessages(msgs: Message[]) {
+  private handleMessages = (msgs: Message[]) => {
     for (const msg of msgs) {
       if (this.abort.signal.aborted) return;
       if (!msg.header) continue;
@@ -239,7 +239,7 @@ export class Transport {
 
       stream.recvq.enqueue(msg);
     }
-  }
+  };
 
   async connect(otherGroupId: string, otherPeerId: string, timeoutMs: number) {
     const payload: MessagePayload = {

@@ -166,18 +166,18 @@ export class Session extends RTCPeerConnection {
     this.lastIceRestart = performance.now();
   }
 
-  sendSignal(signal: Omit<Signal, "generationCounter">) {
+  sendSignal = (signal: Omit<Signal, "generationCounter">) => {
     this.stream.send({
       payloadType: {
         oneofKind: "signal",
         signal: { ...signal, generationCounter: this.generationCounter },
       },
     }, true);
-  }
+  };
 
-  start() {
+  start = () => {
     this.handleNegotiation();
-  }
+  };
 
   override close(reason?: string) {
     if (this.abort.signal.aborted) return;
@@ -197,7 +197,7 @@ export class Session extends RTCPeerConnection {
     this.dispatchEvent(closeEvent);
   }
 
-  async handleNegotiation() {
+  handleNegotiation = async () => {
     try {
       this.makingOffer = true;
       this.logger.debug("creating an offer");
@@ -222,9 +222,9 @@ export class Session extends RTCPeerConnection {
     } finally {
       this.makingOffer = false;
     }
-  }
+  };
 
-  async handleMessage(payload: MessagePayload) {
+  handleMessage = async (payload: MessagePayload) => {
     if (this.abort.signal.aborted) {
       this.logger.warn("session is closed, ignoring message");
       return;
@@ -240,9 +240,9 @@ export class Session extends RTCPeerConnection {
         // nothing to do here. SDK consumer needs to manually trigger the start
         break;
     }
-  }
+  };
 
-  async handleSignal(signal: Signal) {
+  handleSignal = async (signal: Signal) => {
     if (signal.generationCounter < this.generationCounter) {
       this.logger.warn("detected staled generationCounter signals, ignoring");
       return;
@@ -317,9 +317,9 @@ export class Session extends RTCPeerConnection {
     }
 
     return;
-  }
+  };
 
-  async checkPendingCandidates() {
+  checkPendingCandidates = async () => {
     const readyStates: RTCPeerConnectionState[] = [
       "connected",
       "new",
@@ -348,9 +348,9 @@ export class Session extends RTCPeerConnection {
       this.logger.debug(`added ice: ${candidate.candidate}`);
     }
     this.pendingCandidates = [];
-  }
+  };
 
-  id(): string {
+  id = (): string => {
     return `${this.stream.otherPeerId}:${this.stream.otherConnId}`;
-  }
+  };
 }
