@@ -331,7 +331,7 @@ export class Stream {
   private readonly logger: Logger;
   private abort: AbortController;
   public recvq: Queue;
-  public sendbuf: Record<string, Message>;
+  public ackedbuf: Record<string, boolean>;
   public readonly groupId: string;
   public readonly peerId: string;
   public readonly connId: number;
@@ -355,7 +355,7 @@ export class Stream {
     this.peerId = transport.peerId;
     this.connId = transport.connId;
     this.abort = new AbortController();
-    this.sendbuf = {};
+    this.ackedbuf = {};
     this.recvq = new Queue(this.logger);
     this.recvq.onmsg = (msg) => this.handleMessage(msg);
     this.lastSeqnum = 0;
@@ -383,7 +383,7 @@ export class Stream {
 
     this.lastSeqnum++;
     msg.header!.seqnum = this.lastSeqnum;
-    this.sendbuf[msg.header!.seqnum] = msg;
+    this.ackedbuf[msg.header!.seqnum] = false; // marked as unacked
     const resendLimit = MAX_RELIABLE_RETRY_COUNT;
     let tryCount = resendLimit;
     const seqnum = msg.header!.seqnum;
@@ -399,7 +399,9 @@ export class Stream {
         this.abort.signal,
       ).catch(() => { });
 
-      if (!(seqnum in this.sendbuf)) {
+      // since ackedbuf doesn't delete the seqnum right away, it prevents from racing between
+      // resending and acknolwedging
+      if (this.ackedbuf[seqnum]) {
         break;
       }
 
@@ -456,7 +458,7 @@ export class Stream {
     for (const r of ack.ackRanges) {
       for (let s = r.seqnumStart; s < r.seqnumEnd; s++) {
         this.logger.debug("received ack", { seqnum: s });
-        delete this.sendbuf[s];
+        this.ackedbuf[s] = true; // marked as acked
       }
     }
   }
