@@ -3,7 +3,7 @@ import {
   type MessagePayload,
   SdpKind,
   type Signal,
-} from "./rpc/v1/mod.ts";
+} from "./tunnel";
 import { Logger } from "./logger";
 import type { Stream } from "./transport";
 

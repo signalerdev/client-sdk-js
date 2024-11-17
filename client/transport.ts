@@ -1,11 +1,13 @@
 import type {
   Ack,
-  ITunnelClient,
   Message,
   MessageHeader,
   MessagePayload,
   PeerInfo,
-} from "./rpc/v1/mod.ts";
+} from "./tunnel";
+import {
+  ITunnelClient,
+} from "./tunnel.client";
 import type { Logger } from "./logger";
 
 const POLL_TIMEOUT_MS = 60000;
