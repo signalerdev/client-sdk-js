@@ -3,9 +3,9 @@ import {
   type MessagePayload,
   SdpKind,
   type Signal,
-} from "./rpc/v1/mod.ts";
-import { Logger } from "./logger.ts";
-import type { Stream } from "./transport.ts";
+} from "./tunnel";
+import { Logger } from "./logger";
+import type { Stream } from "./transport";
 
 const ICE_RESTART_MAX_COUNT = 2;
 const ICE_RESTART_DEBOUNCE_DELAY_MS = 5000;
@@ -83,15 +83,15 @@ export class Session extends RTCPeerConnection {
     stream.onpayload = (msg) => this.handleMessage(msg);
     stream.onclosed = (reason) => this.close(reason);
 
-    this.oniceconnectionstatechange = () => {
+    this.addEventListener("iceconnectionstatechange", () => {
       this.logger.debug("iceconnectionstate changed", {
         "connectionstate": this.connectionState,
         "iceconnectionstate": this.iceConnectionState,
       });
-    };
+    });
 
     let start = performance.now();
-    this.onconnectionstatechange = () => {
+    this.addEventListener("connectionstatechange", () => {
       this.logger.debug("connectionstate changed", {
         "connectionstate": this.connectionState,
         "iceconnectionstate": this.iceConnectionState,
@@ -99,6 +99,10 @@ export class Session extends RTCPeerConnection {
       switch (this.connectionState) {
         case "connecting":
           start = performance.now();
+          // setTimeout(() => {
+          //   console.log("add empty candidate");
+          //   this.addIceCandidate();
+          // }, 3000);
           break;
         case "connected": {
           const elapsed = performance.now() - start;
@@ -115,9 +119,9 @@ export class Session extends RTCPeerConnection {
         case "closed":
           break;
       }
-    };
-    this.onnegotiationneeded = () => this.handleNegotiation();
-    this.onicecandidate = ({ candidate }) => {
+    });
+    this.addEventListener("negotiationneeded", this.handleNegotiation.bind(this));
+    this.addEventListener("icecandidate", ({ candidate }) => {
       const ice: ICECandidate = {
         candidate: "",
         sdpMLineIndex: 0,
@@ -139,10 +143,12 @@ export class Session extends RTCPeerConnection {
           iceCandidate: ice,
         },
       });
-    };
+    });
   }
 
-  private triggerIceRestart() {
+
+
+  private triggerIceRestart = () => {
     // the impolite offer will trigger the polite peer's to also restart Ice
     if (!this.impolite) return;
 
@@ -166,18 +172,18 @@ export class Session extends RTCPeerConnection {
     this.lastIceRestart = performance.now();
   }
 
-  sendSignal(signal: Omit<Signal, "generationCounter">) {
+  sendSignal = (signal: Omit<Signal, "generationCounter">) => {
     this.stream.send({
       payloadType: {
         oneofKind: "signal",
         signal: { ...signal, generationCounter: this.generationCounter },
       },
     }, true);
-  }
+  };
 
-  start() {
+  start = () => {
     this.handleNegotiation();
-  }
+  };
 
   override close(reason?: string) {
     if (this.abort.signal.aborted) return;
@@ -197,7 +203,7 @@ export class Session extends RTCPeerConnection {
     this.dispatchEvent(closeEvent);
   }
 
-  async handleNegotiation() {
+  handleNegotiation = async () => {
     try {
       this.makingOffer = true;
       this.logger.debug("creating an offer");
@@ -222,9 +228,9 @@ export class Session extends RTCPeerConnection {
     } finally {
       this.makingOffer = false;
     }
-  }
+  };
 
-  async handleMessage(payload: MessagePayload) {
+  handleMessage = async (payload: MessagePayload) => {
     if (this.abort.signal.aborted) {
       this.logger.warn("session is closed, ignoring message");
       return;
@@ -240,9 +246,9 @@ export class Session extends RTCPeerConnection {
         // nothing to do here. SDK consumer needs to manually trigger the start
         break;
     }
-  }
+  };
 
-  async handleSignal(signal: Signal) {
+  handleSignal = async (signal: Signal) => {
     if (signal.generationCounter < this.generationCounter) {
       this.logger.warn("detected staled generationCounter signals, ignoring");
       return;
@@ -317,9 +323,9 @@ export class Session extends RTCPeerConnection {
     }
 
     return;
-  }
+  };
 
-  async checkPendingCandidates() {
+  checkPendingCandidates = async () => {
     const readyStates: RTCPeerConnectionState[] = [
       "connected",
       "new",
@@ -348,9 +354,9 @@ export class Session extends RTCPeerConnection {
       this.logger.debug(`added ice: ${candidate.candidate}`);
     }
     this.pendingCandidates = [];
-  }
+  };
 
-  id(): string {
+  id = (): string => {
     return `${this.stream.otherPeerId}:${this.stream.otherConnId}`;
-  }
+  };
 }

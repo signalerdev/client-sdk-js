@@ -1,14 +1,9 @@
-import { type ITunnelClient, TunnelClient } from "./rpc/v1/mod.ts";
-import {
-  RpcError,
-  type RpcOptions,
-  TwirpErrorCode,
-  TwirpFetchTransport,
-  type UnaryCall,
-} from "./deps.ts";
-import { Transport } from "./transport.ts";
-import { Logger } from "./logger.ts";
-import { Session } from "./session.ts";
+import { type ITunnelClient, TunnelClient } from "./tunnel.client";
+import { Transport } from "./transport";
+import { Logger } from "./logger";
+import { Session } from "./session";
+import { RpcError, UnaryCall, RpcOptions } from "@protobuf-ts/runtime-rpc";
+import { TwirpErrorCode, TwirpFetchTransport } from "@protobuf-ts/twirp-transport";
 
 export type ISession = Pick<
   Session,
@@ -38,7 +33,7 @@ export interface PeerOptions {
 export class Peer {
   private transport: Transport;
   private readonly logger: Logger;
-  public onnewsession = (_s: ISession) => {};
+  public onnewsession = (_s: ISession) => { };
   private sessions: Session[];
   public readonly peerId: string;
 
@@ -52,6 +47,7 @@ export class Peer {
     this.sessions = [];
 
     const rtcConfig: RTCConfiguration = {
+      bundlePolicy: "balanced",
       iceTransportPolicy: "all",
       iceCandidatePoolSize: 0,
       iceServers: opts.iceServers,

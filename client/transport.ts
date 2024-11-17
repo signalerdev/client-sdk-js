@@ -1,12 +1,14 @@
 import type {
   Ack,
-  ITunnelClient,
   Message,
   MessageHeader,
   MessagePayload,
   PeerInfo,
-} from "./rpc/v1/mod.ts";
-import type { Logger } from "./logger.ts";
+} from "./tunnel";
+import {
+  ITunnelClient,
+} from "./tunnel.client";
+import type { Logger } from "./logger";
 
 const POLL_TIMEOUT_MS = 60000;
 const RETRY_DELAY_MS = 1000;
@@ -47,7 +49,7 @@ class Queue {
   private unreliable: Message[];
   private processing: boolean;
   private readonly logger: Logger;
-  public onmsg = async (_: Message) => {};
+  public onmsg = async (_: Message) => { };
 
   constructor(logger: Logger) {
     this.logger = logger.sub("queue");
@@ -122,8 +124,8 @@ export class Transport {
   public readonly asleep: typeof defaultAsleep;
   private readonly randUint32: typeof defaultRandUint32;
   private readonly isRecoverable: typeof defaultIsRecoverable;
-  public onnewstream = (_: Stream) => {};
-  public onclosed = (_reason: string) => {};
+  public onnewstream = (_: Stream) => { };
+  public onclosed = (_reason: string) => { };
 
   constructor(
     private readonly client: ITunnelClient,
@@ -173,7 +175,7 @@ export class Transport {
         await this.asleep(
           RETRY_DELAY_MS + Math.random() * RETRY_JITTER_MS,
           this.abort.signal,
-        ).catch(() => {});
+        ).catch(() => { });
       }
     }
     this.logger.debug("connection closed");
@@ -188,7 +190,7 @@ export class Transport {
     this.streams = [];
   }
 
-  private handleMessages(msgs: Message[]) {
+  private handleMessages = (msgs: Message[]) => {
     for (const msg of msgs) {
       if (this.abort.signal.aborted) return;
       if (!msg.header) continue;
@@ -239,7 +241,7 @@ export class Transport {
 
       stream.recvq.enqueue(msg);
     }
-  }
+  };
 
   async connect(otherGroupId: string, otherPeerId: string, timeoutMs: number) {
     const payload: MessagePayload = {
@@ -269,7 +271,7 @@ export class Transport {
       await this.asleep(
         RETRY_DELAY_MS + Math.random() * RETRY_JITTER_MS,
         this.abort.signal,
-      ).catch(() => {});
+      ).catch(() => { });
 
       const found = this.streams.find((s) =>
         s.otherGroupId === otherGroupId && s.otherPeerId === otherPeerId
@@ -309,7 +311,7 @@ export class Transport {
       await this.asleep(
         RETRY_DELAY_MS + Math.random() * RETRY_JITTER_MS,
         this.abort.signal,
-      ).catch(() => {});
+      ).catch(() => { });
     } while (!signal.aborted && !this.abort.signal.aborted);
   }
 
@@ -334,8 +336,8 @@ export class Stream {
   public readonly peerId: string;
   public readonly connId: number;
   private lastSeqnum: number;
-  public onpayload = async (_: MessagePayload) => {};
-  public onclosed = (_reason: string) => {};
+  public onpayload = async (_: MessagePayload) => { };
+  public onclosed = (_reason: string) => { };
 
   constructor(
     private readonly transport: Transport,
@@ -395,7 +397,7 @@ export class Stream {
       await this.transport.asleep(
         5 * RETRY_DELAY_MS + Math.random() * RETRY_JITTER_MS,
         this.abort.signal,
-      ).catch(() => {});
+      ).catch(() => { });
 
       if (!(seqnum in this.sendbuf)) {
         break;

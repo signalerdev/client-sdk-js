@@ -1,5 +1,4 @@
-// @deno-types="@types/react"
-import React, { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { usePeer } from "./peer.ts";
 
 export default function App() {

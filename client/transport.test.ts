@@ -1,24 +1,24 @@
-import { assertEquals, assertGreater } from "jsr:@std/assert@1.0.7";
-import { afterEach, describe, it } from "jsr:@std/testing@1.0.4/bdd";
-import { TwirpFetchTransport } from "./deps.ts";
+import { afterEach, describe, expect, it } from "vitest";
+import { TwirpFetchTransport } from "@protobuf-ts/twirp-transport";
 import {
   delay,
   ReservedConnId,
   Transport,
   type TransportOptions,
-} from "./transport.ts";
+} from "./transport";
 import {
-  type ITunnelClient,
+  PrepareReq,
+  PrepareResp,
   type Message,
   type RecvReq,
   type RecvResp,
   type SendReq,
   type SendResp,
-  TunnelClient,
-} from "./rpc/v1/mod.ts";
+} from "./tunnel";
+import { type ITunnelClient, TunnelClient } from "./tunnel.client";
 import type { UnaryCall } from "@protobuf-ts/runtime-rpc";
 import type { RpcOptions } from "@protobuf-ts/runtime-rpc";
-import { Logger } from "./logger.ts";
+import { Logger } from "./logger";
 
 async function waitFor(
   conditionFn: () => boolean | Promise<boolean>,
@@ -40,7 +40,7 @@ async function waitFor(
 class MockClient implements ITunnelClient {
   private readonly queues: Record<string, Message[]>;
 
-  constructor() {
+  constructor(private readonly groupId: string, private readonly peerId: string) {
     this.queues = {};
   }
 
@@ -50,11 +50,16 @@ class MockClient implements ITunnelClient {
     return q;
   }
 
+  prepare(_input: PrepareReq, _options?: RpcOptions): UnaryCall<PrepareReq, PrepareResp> {
+    // @ts-ignore: mock obj
+    return null;
+  }
+
   send(input: SendReq, _options?: RpcOptions): UnaryCall<SendReq, SendResp> {
     const msg = input.msg!;
     const hdr = msg.header!;
-    const id = `${hdr.peerId}:${hdr.connId}`;
-    const otherId = `${hdr.otherPeerId}:${hdr.otherConnId}`;
+    const id = `${hdr.groupId}:${hdr.peerId}:${hdr.connId}`;
+    const otherId = `${hdr.groupId}:${hdr.otherPeerId}:${hdr.otherConnId}`;
     this.getq(otherId).push(msg);
 
     const recv = this.getq(id).pop();
@@ -66,9 +71,8 @@ class MockClient implements ITunnelClient {
   }
 
   recv(input: RecvReq, options?: RpcOptions): UnaryCall<RecvReq, RecvResp> {
-    const info = input.info!;
-    const id = `${info.peerId}:${info.connId}`;
-    const discoveryId = `${info.peerId}:${ReservedConnId.Discovery}`;
+    const id = `${this.groupId}:${this.peerId}:${input.info?.connId}`;
+    const discoveryId = `${this.groupId}:${this.peerId}:${ReservedConnId.Discovery}`;
     const msgs: Message[] = [];
     const resp = { response: { msgs } };
     const signal = options?.abort;
@@ -89,9 +93,9 @@ class MockClient implements ITunnelClient {
   }
 }
 
-function createClient(mock: boolean): ITunnelClient {
+function createClient(groupId: string, peerId: string, mock: boolean): ITunnelClient {
   if (mock) {
-    return new MockClient();
+    return new MockClient(groupId, peerId);
   }
 
   const twirp = new TwirpFetchTransport({
@@ -109,7 +113,7 @@ describe("util", () => {
       streamCount++;
     }, 200);
     await waitFor(() => (streamCount > 0));
-    assertGreater(streamCount, 0);
+    expect(streamCount).toBeGreaterThan(0);
   });
 });
 
@@ -118,22 +122,23 @@ describe("transport", () => {
 
   it("should receive join", async () => {
     const logger = new Logger("test", {});
-    const client = createClient(true);
+    const clientA = createClient("default", "peerA", true);
+    const clientB = createClient("default", "peerB", true);
     const opts: TransportOptions = {
       enableDiscovery: false,
+      groupId: "default",
       peerId: "peerA",
       logger,
-      reliableMaxTryCount: 3,
       asleep: (ms, opts) => delay(ms / 100, opts), // speedup by 100x
     };
-    const peerA = new Transport(client, opts);
-    const peerB = new Transport(client, { ...opts, peerId: "peerB" });
+    const peerA = new Transport(clientA, opts);
+    const peerB = new Transport(clientB, { ...opts, peerId: "peerB" });
     let streamCountA = 0;
     let payloadCountA = 0;
     let streamCountB = 0;
     peerA.onnewstream = (s) => {
-      assertEquals(s.otherPeerId, peerB.peerId);
-      assertEquals(s.otherConnId, peerB.connId);
+      expect(s.otherPeerId).toBe(peerB.peerId);
+      expect(s.otherConnId).toBe(peerB.connId);
       streamCountA++;
 
       s.onpayload = () => {
@@ -142,8 +147,8 @@ describe("transport", () => {
       };
     };
     peerB.onnewstream = (s) => {
-      assertEquals(s.otherPeerId, peerA.peerId);
-      assertEquals(s.otherConnId, peerA.connId);
+      expect(s.otherPeerId).toBe(peerA.peerId);
+      expect(s.otherConnId).toBe(peerA.connId);
       streamCountB++;
 
       s.send({
@@ -157,7 +162,7 @@ describe("transport", () => {
     peerA.listen();
     peerB.listen();
 
-    peerA.connect("peerB");
+    peerA.connect("default", "peerB", 1000);
 
     await waitFor(() => streamCountA > 0 && streamCountB > 0);
     await delay(100);
@@ -165,8 +170,8 @@ describe("transport", () => {
     peerA.close();
     peerB.close();
 
-    assertEquals(streamCountA, 1);
-    assertEquals(streamCountB, 1);
-    assertEquals(payloadCountA, 1);
+    expect(streamCountA).toBe(1);
+    expect(streamCountB).toBe(1);
+    expect(payloadCountA).toBe(1);
   });
 });

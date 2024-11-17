@@ -1,0 +1,50 @@
+{
+  "name": "@signalerdev/client",
+  "version": "0.0.11",
+  "module": "dist/index.mjs",
+  "types": "dist/index.d.mts",
+  "scripts": {
+    "gen": "protoc --ts_out=. --ts_opt=client_generic --proto_path rpc/v1 ./rpc/v1/tunnel.proto",
+    "build": "tsup",
+    "build:watch": "tsup --watch",
+    "clean": "rm -rf dist",
+    "test": "vitest"
+  },
+  "files": [
+    "dist"
+  ],
+  "keywords": [
+    "typescript",
+    "library",
+    "browser"
+  ],
+  "author": "Lukas Herman",
+  "license": "Apache-2.0",
+  "dependencies": {
+    "@protobuf-ts/runtime": "^2.9.4",
+    "@protobuf-ts/runtime-rpc": "^2.9.4",
+    "@protobuf-ts/twirp-transport": "^2.9.4",
+    "@signalerdev/client": "^0.0.11",
+    "webrtc-adapter": "^9.0.1"
+  },
+  "devDependencies": {
+    "@protobuf-ts/plugin": "^2.9.4",
+    "protoc-gen-ts": "^0.8.7",
+    "tsup": "^8.3.5",
+    "typescript": "^5.6.3",
+    "vitest": "^2.1.5"
+  },
+  "tsup": {
+    "entry": [
+      "index.ts"
+    ],
+    "format": [
+      "esm"
+    ],
+    "dts": true,
+    "minify": true,
+    "sourcemap": true,
+    "target": "esnext",
+    "outDir": "dist"
+  }
+}

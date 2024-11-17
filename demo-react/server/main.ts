@@ -14,8 +14,6 @@ opts.appSecret = Deno.env.get("APP_SECRET") ||
   "sk_7317736f8a8d075a03cdea6b6b76094ae424cbf619a8e9273e633daed3f55c38";
 const app = new App(opts);
 
-const dirname = path.dirname(path.fromFileUrl(import.meta.url));
-
 const handleAuth = (url: URL): Response => {
   const id = url.searchParams.get("id");
 

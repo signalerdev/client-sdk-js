@@ -1,4 +1,4 @@
-import { createPeer, type ISession, type Peer } from "../peer.ts";
+import { createPeer, type ISession, type Peer } from "@signalerdev/client";
 // @deno-types="@types/react"
 import { useCallback, useRef, useState } from "react";
 
@@ -83,7 +83,7 @@ export function usePeer(localStream: MediaStream | null) {
       }
 
       s.start(); // decide to accept or reject
-      update(s, () => {});
+      update(s, () => { });
     };
     peer.current = p;
     p.start();
