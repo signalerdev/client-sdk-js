@@ -1,0 +1,14 @@
+{
+  "name": "@signalerdev/client",
+  "scripts": {
+    "gen": "protoc --ts_out=. --ts_opt=client_generic --twirp_out=paths=source_relative:. --proto_path rpc/v1 ./rpc/v1/tunnel.proto"
+  },
+  "dependencies": {
+    "@protobuf-ts/runtime": "^2.9.4",
+    "@protobuf-ts/runtime-rpc": "^2.9.4"
+  },
+  "devDependencies": {
+    "@protobuf-ts/plugin": "^2.9.4",
+    "protoc-gen-ts": "^0.8.7"
+  }
+}

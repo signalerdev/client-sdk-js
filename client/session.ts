@@ -4,8 +4,8 @@ import {
   SdpKind,
   type Signal,
 } from "./rpc/v1/mod.ts";
-import { Logger } from "./logger.ts";
-import type { Stream } from "./transport.ts";
+import { Logger } from "./logger";
+import type { Stream } from "./transport";
 
 const ICE_RESTART_MAX_COUNT = 2;
 const ICE_RESTART_DEBOUNCE_DELAY_MS = 5000;

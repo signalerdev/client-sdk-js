@@ -6,9 +6,9 @@ import {
   TwirpFetchTransport,
   type UnaryCall,
 } from "./deps.ts";
-import { Transport } from "./transport.ts";
-import { Logger } from "./logger.ts";
-import { Session } from "./session.ts";
+import { Transport } from "./transport";
+import { Logger } from "./logger";
+import { Session } from "./session";
 
 export type ISession = Pick<
   Session,
@@ -38,7 +38,7 @@ export interface PeerOptions {
 export class Peer {
   private transport: Transport;
   private readonly logger: Logger;
-  public onnewsession = (_s: ISession) => {};
+  public onnewsession = (_s: ISession) => { };
   private sessions: Session[];
   public readonly peerId: string;
 
