@@ -28,7 +28,10 @@ jobs:
         with:
           node-version: lts/*
 
-      - name: Install step
+      - name: Install client
+        run: "cd client && npm install && npm run build"
+
+      - name: Install ui
         run: "cd demo-react && npm install"
 
       - name: Build step
