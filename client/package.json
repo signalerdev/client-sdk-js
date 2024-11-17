@@ -7,7 +7,8 @@
     "gen": "protoc --ts_out=. --ts_opt=client_generic --proto_path rpc/v1 ./rpc/v1/tunnel.proto",
     "build": "tsup",
     "build:watch": "tsup --watch",
-    "clean": "rm -rf dist"
+    "clean": "rm -rf dist",
+    "test": "vitest"
   },
   "files": [
     "dist"
