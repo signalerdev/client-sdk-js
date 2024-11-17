@@ -148,7 +148,7 @@ export class Session extends RTCPeerConnection {
 
 
 
-  private triggerIceRestart() {
+  private triggerIceRestart = () => {
     // the impolite offer will trigger the polite peer's to also restart Ice
     if (!this.impolite) return;
 
