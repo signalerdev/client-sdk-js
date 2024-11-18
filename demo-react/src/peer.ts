@@ -1,6 +1,6 @@
 import { createPeer, type ISession, type Peer } from "@signalerdev/client";
 // @deno-types="@types/react"
-import { useCallback, useRef, useState } from "react";
+import { useCallback, useRef, useState, useEffect } from "react";
 
 const BASE_URL = "https://demo.lukas-coding.us/twirp";
 // const BASE_URL = "http://localhost:3000/twirp";
@@ -102,6 +102,18 @@ export function usePeer(localStream: MediaStream | null) {
     if (!peer.current) return;
     peer.current.stop();
     peer.current = null;
+  }, []);
+
+  useEffect(() => {
+    const beforeunload = () => {
+      stop();
+    };
+
+    window.addEventListener("beforeunload", beforeunload);
+
+    return () => {
+      window.removeEventListener("beforeunload", beforeunload);
+    };
   }, []);
 
   const connect = useCallback((otherPeerId: string) => {
