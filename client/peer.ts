@@ -71,10 +71,8 @@ export class Peer {
   }
 
   stop() {
+    // transport closing will trigger closing the sessions too
     this.transport.close();
-    for (const s of this.sessions) {
-      s.close();
-    }
     this.sessions = [];
   }
 

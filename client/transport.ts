@@ -392,8 +392,6 @@ export class Stream {
     while (!this.abort.signal.aborted) {
       await this.transport.send(this.abort.signal, msg);
 
-      // TODO: with 1 second, the resending causes the stream reconnection to fail.
-      // stress test this more.
       await this.transport.asleep(
         5 * RETRY_DELAY_MS + Math.random() * RETRY_JITTER_MS,
         this.abort.signal,
@@ -406,14 +404,13 @@ export class Stream {
       }
 
       if (tryCount <= 0) {
-        this.logger.warn("reached the maximum resend limit", {
+        const message = "reached the maximum resend limit, dropping message";
+        this.logger.warn(message, {
           seqnum,
           resendLimit,
           reliable,
         });
-
-        this.close(`${this.otherPeerId}:${this.otherConnId} is staled`);
-        break;
+        throw new Error(message);
       }
 
       tryCount--;
@@ -472,7 +469,7 @@ export class Stream {
         oneofKind: "bye",
         bye: {},
       },
-    }, false);
+    }, false).catch(err => this.logger.warn("failed to send bye", { e: err }));
     this.abort.abort(reason);
     this.transport.onstreamclosed(this);
     this.onclosed(reason);
