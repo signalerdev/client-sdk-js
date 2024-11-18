@@ -278,7 +278,7 @@ export class Session extends RTCPeerConnection {
     if (msg.oneofKind === "iceCandidate") {
       const ice = toIceCandidate(msg.iceCandidate);
       this.pendingCandidates.push(ice);
-      await this.checkPendingCandidates();
+      this.checkPendingCandidates();
 
       return;
     }
@@ -303,10 +303,12 @@ export class Session extends RTCPeerConnection {
       type: toSDPType(sdp.kind),
       sdp: sdp.sdp,
     });
-    await this.checkPendingCandidates();
     if (sdp.kind === SdpKind.OFFER) {
       await this.setLocalDescription();
-      if (!this.localDescription) return;
+      if (!this.localDescription) {
+        this.logger.error("unexpected null local description");
+        return;
+      }
 
       // when a signal is retried many times and still failing. The failing heartbeat will kick in and close.
       this.sendSignal({
@@ -320,10 +322,11 @@ export class Session extends RTCPeerConnection {
       });
     }
 
+    this.checkPendingCandidates();
     return;
   };
 
-  checkPendingCandidates = async () => {
+  checkPendingCandidates = () => {
     const safeStates: RTCSignalingState[] = [
       "stable",
       "have-local-offer",
