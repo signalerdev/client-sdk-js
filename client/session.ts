@@ -146,8 +146,6 @@ export class Session extends RTCPeerConnection {
     });
   }
 
-
-
   private triggerIceRestart = () => {
     // the impolite offer will trigger the polite peer's to also restart Ice
     if (!this.impolite) return;
@@ -326,17 +324,14 @@ export class Session extends RTCPeerConnection {
   };
 
   checkPendingCandidates = async () => {
-    const readyStates: RTCPeerConnectionState[] = [
-      "connected",
-      "new",
-      "disconnected",
-      "failed",
+    const safeStates: RTCSignalingState[] = [
+      "stable",
+      "have-local-offer",
+      "have-remote-offer",
     ];
-    if (
-      !readyStates.includes(this.connectionState) ||
-      !this.remoteDescription
-    ) {
+    if (!safeStates.includes(this.signalingState) || !this.remoteDescription) {
       this.logger.debug("wait for adding pending candidates", {
+        signalingState: this.signalingState,
         iceConnectionState: this.iceConnectionState,
         connectionState: this.connectionState,
         remoteDescription: this.remoteDescription,
@@ -350,7 +345,11 @@ export class Session extends RTCPeerConnection {
         continue;
       }
 
-      await this.addIceCandidate(candidate);
+      // intentionally not awaiting, otherwise we might be in a different state than we originally 
+      // checked.
+      this.addIceCandidate(candidate).catch(e => {
+        this.logger.warn("failed to add candidate, skipping.", { candidate, e });
+      });
       this.logger.debug(`added ice: ${candidate.candidate}`);
     }
     this.pendingCandidates = [];
