@@ -28,14 +28,11 @@ jobs:
         with:
           node-version: lts/*
 
-      - name: Install client
-        run: "cd client && npm install && npm run build"
+      - name: Install
+        run: "npm ci"
 
       - name: Install ui
-        run: "cd demo-react && npm install"
-
-      - name: Build step
-        run: "cd demo-react && npm run build"
+        run: "npm run build -w @signalerdev/client && npm run build -w @signalerdev/demo-react"
 
       - name: Upload to Deno Deploy
         uses: denoland/deployctl@v1
