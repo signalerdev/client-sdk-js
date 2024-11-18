@@ -9,6 +9,7 @@ import {
   ITunnelClient,
 } from "./tunnel.client";
 import type { Logger } from "./logger";
+import { joinSignals } from "./util";
 
 const POLL_TIMEOUT_MS = 60000;
 const RETRY_DELAY_MS = 1000;
@@ -361,7 +362,14 @@ export class Stream {
     this.lastSeqnum = 0;
   }
 
-  async send(payload: MessagePayload, reliable: boolean) {
+  createSignal(...signals: AbortSignal[]): AbortSignal {
+    return joinSignals(this.abort.signal, ...signals);
+  }
+
+  async send(payload: MessagePayload, reliable: boolean, signal?: AbortSignal) {
+    if (!signal) {
+      signal = this.abort.signal;
+    }
     const msg: Message = {
       header: {
         groupId: this.transport.groupId,
@@ -377,7 +385,7 @@ export class Stream {
     };
 
     if (!reliable) {
-      await this.transport.send(this.abort.signal, msg);
+      await this.transport.send(signal, msg);
       return;
     }
 
@@ -389,7 +397,7 @@ export class Stream {
     const seqnum = msg.header!.seqnum;
 
     // TODO: abort when generation counter doesn't match
-    while (!this.abort.signal.aborted) {
+    while (!signal.aborted) {
       await this.transport.send(this.abort.signal, msg);
 
       await this.transport.asleep(
