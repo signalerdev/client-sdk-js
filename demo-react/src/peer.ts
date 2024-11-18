@@ -62,9 +62,14 @@ export function usePeer(localStream: MediaStream | null) {
 
       s.addEventListener("connectionstatechange", () => {
         console.log(s.connectionState);
-        const loading = s.connectionState !== "connected";
+        // TODO: https://linear.app/eateverything/issue/EAT-218/miss-connection-state-change
+        // const loading = s.connectionState !== "connected";
+        // update(s, (p) => {
+        //   p.loading = loading;
+        // });
+
         update(s, (p) => {
-          p.loading = loading;
+          p.loading = false;
         });
 
         if (s.connectionState === "closed") {
