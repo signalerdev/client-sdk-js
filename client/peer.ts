@@ -9,12 +9,11 @@ export type ISession = Pick<
   Session,
   | "addTrack"
   | "removeTrack"
-  | "addEventListener"
-  | "removeEventListener"
-  | "getReceivers"
-  | "getSenders"
   | "createDataChannel"
   | "connectionState"
+  | "ondatachannel"
+  | "onconnectionstatechange"
+  | "ontrack"
   // abstraction starts here
   | "start"
   | "close"
@@ -70,10 +69,9 @@ export class Peer {
     this.transport.listen();
   }
 
-  stop() {
-    // transport closing will trigger closing the sessions too
-    this.transport.close();
+  close() {
     this.sessions = [];
+    this.transport.close();
   }
 
   connect(otherGroupId: string, otherPeerID: string, timeoutMs: number) {

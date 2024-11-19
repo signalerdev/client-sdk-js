@@ -53,22 +53,18 @@ export function usePeer(localStream: MediaStream | null) {
     });
 
     p.onnewsession = (s) => {
-      s.addEventListener("track", ({ streams }) => {
+      s.ontrack = ({ streams }) => {
         console.log("ontrack", streams[0]);
         update(s, (p) => {
           p.remoteStream = streams[0];
         });
-      });
+      };
 
-      s.addEventListener("connectionstatechange", () => {
+      s.onconnectionstatechange = () => {
         console.log(s.connectionState);
         const loading = s.connectionState !== "connected";
         update(s, (p) => {
           p.loading = loading;
-        });
-
-        update(s, (p) => {
-          p.loading = false;
         });
 
         if (s.connectionState === "closed") {
@@ -78,7 +74,7 @@ export function usePeer(localStream: MediaStream | null) {
             return newSessions;
           });
         }
-      });
+      };
 
       if (localStream) {
         for (const track of localStream.getTracks()) {
@@ -93,14 +89,14 @@ export function usePeer(localStream: MediaStream | null) {
     p.start();
 
     return () => {
-      p.stop();
+      p.close();
       peer.current = null;
     };
   }, [localStream, update]);
 
   const stop = useCallback(() => {
     if (!peer.current) return;
-    peer.current.stop();
+    peer.current.close();
     peer.current = null;
   }, []);
 

@@ -49,23 +49,72 @@ function fromSDPType(t: RTCSdpType): SdpKind {
   }
 }
 
-export class Session extends RTCPeerConnection {
+export class Session {
+  private pc: RTCPeerConnection;
   private makingOffer: boolean;
   private impolite: boolean;
   private pendingCandidates: RTCIceCandidateInit[];
-  public readonly logger: Logger;
+  private readonly logger: Logger;
   private abort: AbortController;
   private generationCounter: number;
   private iceRestartCount: number;
   private lastIceRestart: number;
   private timers: number[];
-  public closeReason?: string;
+  private _closeReason?: string;
+  private _connectionState: RTCPeerConnectionState;
+
+  /**
+  * {@link https://developer.mozilla.org/en-US/docs/Web/API/RTCPeerConnection/ondatachannel}
+  */
+  public ondatachannel: RTCPeerConnection["ondatachannel"] = () => { };
+
+  /**
+  * {@link https://developer.mozilla.org/en-US/docs/Web/API/RTCPeerConnection/onconnectionstatechange}
+  */
+  public onconnectionstatechange: RTCPeerConnection["onconnectionstatechange"] = () => { };
+
+  /**
+  * {@link https://developer.mozilla.org/en-US/docs/Web/API/RTCPeerConnection/ontrack}
+  */
+  public ontrack: RTCPeerConnection["ontrack"] = () => { };
+
+  /**
+  * {@link https://developer.mozilla.org/en-US/docs/Web/API/RTCPeerConnection/addTrack}
+  */
+  addTrack(...args: Parameters<RTCPeerConnection["addTrack"]>) {
+    return this.pc.addTrack(...args);
+  }
+
+  /**
+  * {@link https://developer.mozilla.org/en-US/docs/Web/API/RTCPeerConnection/removeTrack}
+  */
+  removeTrack(...args: Parameters<RTCPeerConnection["removeTrack"]>) {
+    return this.pc.removeTrack(...args);
+  }
+
+  /**
+  * {@link https://developer.mozilla.org/en-US/docs/Web/API/RTCPeerConnection/createDataChannel}
+  */
+  createDataChannel(...args: Parameters<RTCPeerConnection["createDataChannel"]>) {
+    return this.pc.createDataChannel(...args);
+  }
+
+  /**
+  * {@link https://developer.mozilla.org/en-US/docs/Web/API/RTCPeerConnection/connectionState}
+  */
+  get connectionState() {
+    return this.pc.connectionState;
+  }
+
+  get closeReason() {
+    return this._closeReason;
+  }
 
   constructor(
     private readonly stream: Stream,
     config: RTCConfiguration,
   ) {
-    super(config);
+    this.pc = new RTCPeerConnection(config);
 
     this.makingOffer = false;
     this.pendingCandidates = [];
@@ -80,29 +129,26 @@ export class Session extends RTCPeerConnection {
     this.iceRestartCount = 0;
     this.lastIceRestart = 0;
     this.timers = [];
+    this._connectionState = "new";
     stream.onpayload = (msg) => this.handleMessage(msg);
     stream.onclosed = (reason) => this.close(reason);
 
-    this.addEventListener("iceconnectionstatechange", () => {
+    this.pc.oniceconnectionstatechange = () => {
       this.logger.debug("iceconnectionstate changed", {
-        "connectionstate": this.connectionState,
-        "iceconnectionstate": this.iceConnectionState,
+        "connectionstate": this.pc.connectionState,
+        "iceconnectionstate": this.pc.iceConnectionState,
       });
-    });
+    };
 
     let start = performance.now();
-    this.addEventListener("connectionstatechange", () => {
+    this.pc.onconnectionstatechange = (ev) => {
       this.logger.debug("connectionstate changed", {
-        "connectionstate": this.connectionState,
-        "iceconnectionstate": this.iceConnectionState,
+        "connectionstate": this.pc.connectionState,
+        "iceconnectionstate": this.pc.iceConnectionState,
       });
-      switch (this.connectionState) {
+      switch (this.pc.connectionState) {
         case "connecting":
           start = performance.now();
-          // setTimeout(() => {
-          //   console.log("add empty candidate");
-          //   this.addIceCandidate();
-          // }, 3000);
           break;
         case "connected": {
           const elapsed = performance.now() - start;
@@ -119,9 +165,11 @@ export class Session extends RTCPeerConnection {
         case "closed":
           break;
       }
-    });
-    this.addEventListener("negotiationneeded", this.handleNegotiation.bind(this));
-    this.addEventListener("icecandidate", ({ candidate }) => {
+
+      this.setConnectionState(this.pc.connectionState, ev);
+    };
+    this.pc.onnegotiationneeded = this.handleNegotiation.bind(this);
+    this.pc.onicecandidate = ({ candidate }) => {
       const ice: ICECandidate = {
         candidate: "",
         sdpMLineIndex: 0,
@@ -143,7 +191,30 @@ export class Session extends RTCPeerConnection {
           iceCandidate: ice,
         },
       });
-    });
+    };
+
+    this.pc.ondatachannel = (...args) => {
+      if (this.ondatachannel) {
+        // @ts-ignore: proxy to RTCPeerConnection
+        this.ondatachannel(...args);
+      }
+    };
+
+    this.pc.ontrack = (...args) => {
+      if (this.ontrack) {
+        // @ts-ignore: proxy to RTCPeerConnection
+        this.ontrack(...args);
+      }
+    };
+  }
+
+  private setConnectionState(s: RTCPeerConnectionState, ev: Event) {
+    if (s === this._connectionState) return;
+
+    if (this.onconnectionstatechange) {
+      // @ts-ignore: proxy to RTCPeerConnection
+      this.onconnectionstatechange(ev);
+    }
   }
 
   private triggerIceRestart = () => {
@@ -161,16 +232,16 @@ export class Session extends RTCPeerConnection {
       return;
     }
 
-    if (this.connectionState === "connected") return;
+    if (this.pc.connectionState === "connected") return;
     if (this.iceRestartCount >= ICE_RESTART_MAX_COUNT) this.close();
     this.logger.debug("triggered ICE restart");
-    this.restartIce();
+    this.pc.restartIce();
     this.generationCounter++;
     this.iceRestartCount++;
     this.lastIceRestart = performance.now();
   }
 
-  sendSignal = (signal: Omit<Signal, "generationCounter">) => {
+  private sendSignal = (signal: Omit<Signal, "generationCounter">) => {
     this.stream.send({
       payloadType: {
         oneofKind: "signal",
@@ -183,30 +254,31 @@ export class Session extends RTCPeerConnection {
     this.handleNegotiation();
   };
 
-  override close(reason?: string) {
+  close(reason?: string) {
     if (this.abort.signal.aborted) return;
     this.abort.abort(reason);
     for (const timer of this.timers) {
       clearTimeout(timer);
     }
     this.timers = [];
-    this.logger.debug("closing");
     this.stream.close();
-    this.closeReason = reason;
-    super.close();
+    this._closeReason = reason;
+    this.pc.close();
 
     // RTCPeerConnection will not emit closed connection. This is a polyfill to get around it.
     // https://stackoverflow.com/questions/66297347/why-does-calling-rtcpeerconnection-close-not-send-closed-event
     const closeEvent = new Event("connectionstatechange");
-    this.dispatchEvent(closeEvent);
+    this.setConnectionState("closed", closeEvent);
+
+    this.logger.debug("session closed", { connectionState: this.connectionState });
   }
 
-  handleNegotiation = async () => {
+  private handleNegotiation = async () => {
     try {
       this.makingOffer = true;
       this.logger.debug("creating an offer");
-      await this.setLocalDescription();
-      if (!this.localDescription) {
+      await this.pc.setLocalDescription();
+      if (!this.pc.localDescription) {
         throw new Error("expect localDescription to be not empty");
       }
 
@@ -214,8 +286,8 @@ export class Session extends RTCPeerConnection {
         data: {
           oneofKind: "sdp",
           sdp: {
-            kind: fromSDPType(this.localDescription.type),
-            sdp: this.localDescription.sdp,
+            kind: fromSDPType(this.pc.localDescription.type),
+            sdp: this.pc.localDescription.sdp,
           },
         },
       });
@@ -228,7 +300,7 @@ export class Session extends RTCPeerConnection {
     }
   };
 
-  handleMessage = async (payload: MessagePayload) => {
+  private handleMessage = async (payload: MessagePayload) => {
     if (this.abort.signal.aborted) {
       this.logger.warn("session is closed, ignoring message");
       return;
@@ -246,7 +318,7 @@ export class Session extends RTCPeerConnection {
     }
   };
 
-  handleSignal = async (signal: Signal) => {
+  private handleSignal = async (signal: Signal) => {
     if (signal.generationCounter < this.generationCounter) {
       this.logger.warn("detected staled generationCounter signals, ignoring");
       return;
@@ -290,7 +362,7 @@ export class Session extends RTCPeerConnection {
     const sdp = msg.sdp;
     this.logger.debug("received a SDP signal", { sdpKind: sdp.kind });
     const offerCollision = sdp.kind === SdpKind.OFFER &&
-      (this.makingOffer || this.signalingState !== "stable");
+      (this.makingOffer || this.pc.signalingState !== "stable");
 
     const ignoreOffer = this.impolite && offerCollision;
     if (ignoreOffer) {
@@ -299,13 +371,13 @@ export class Session extends RTCPeerConnection {
     }
 
     this.logger.debug("creating an answer");
-    await this.setRemoteDescription({
+    await this.pc.setRemoteDescription({
       type: toSDPType(sdp.kind),
       sdp: sdp.sdp,
     });
     if (sdp.kind === SdpKind.OFFER) {
-      await this.setLocalDescription();
-      if (!this.localDescription) {
+      await this.pc.setLocalDescription();
+      if (!this.pc.localDescription) {
         this.logger.error("unexpected null local description");
         return;
       }
@@ -315,8 +387,8 @@ export class Session extends RTCPeerConnection {
         data: {
           oneofKind: "sdp",
           sdp: {
-            kind: fromSDPType(this.localDescription.type),
-            sdp: this.localDescription.sdp,
+            kind: fromSDPType(this.pc.localDescription.type),
+            sdp: this.pc.localDescription.sdp,
           },
         },
       });
@@ -326,18 +398,18 @@ export class Session extends RTCPeerConnection {
     return;
   };
 
-  checkPendingCandidates = () => {
+  private checkPendingCandidates = () => {
     const safeStates: RTCSignalingState[] = [
       "stable",
       "have-local-offer",
       "have-remote-offer",
     ];
-    if (!safeStates.includes(this.signalingState) || !this.remoteDescription) {
+    if (!safeStates.includes(this.pc.signalingState) || !this.pc.remoteDescription) {
       this.logger.debug("wait for adding pending candidates", {
-        signalingState: this.signalingState,
-        iceConnectionState: this.iceConnectionState,
-        connectionState: this.connectionState,
-        remoteDescription: this.remoteDescription,
+        signalingState: this.pc.signalingState,
+        iceConnectionState: this.pc.iceConnectionState,
+        connectionState: this.pc.connectionState,
+        remoteDescription: this.pc.remoteDescription,
         pendingCandidates: this.pendingCandidates.length,
       });
       return;
@@ -350,7 +422,7 @@ export class Session extends RTCPeerConnection {
 
       // intentionally not awaiting, otherwise we might be in a different state than we originally 
       // checked.
-      this.addIceCandidate(candidate).catch(e => {
+      this.pc.addIceCandidate(candidate).catch(e => {
         this.logger.warn("failed to add candidate, skipping.", { candidate, e });
       });
       this.logger.debug(`added ice: ${candidate.candidate}`);
