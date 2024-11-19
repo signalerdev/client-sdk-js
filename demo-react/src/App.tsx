@@ -73,13 +73,13 @@ export default function App() {
           className="s12 m6 no-padding"
           stream={stream}
           loading={false}
-          title={peerId ? `${peerId} (me)` : "me"}
+          title={peerId}
         />
-        {Object.entries(peer.sessions).map(([id, s]) => (
+        {Object.entries(peer.sessions).map(([_, s]) => (
           <VideoContainer
             key={s.key}
             className="s12 m6 no-padding"
-            title={id}
+            title={s.sess.otherPeerId}
             stream={s.remoteStream}
             loading={s.loading}
           />
@@ -110,6 +110,7 @@ function VideoContainer(props: VideoContainerProps) {
     <article className={props.className}>
       {loading ? <progress className="circle large"></progress> : (
         <video
+          data-testid={props.title}
           className="responsive max"
           ref={videoRef}
           autoPlay
