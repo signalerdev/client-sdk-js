@@ -14,10 +14,11 @@ export type ISession = Pick<
   | "ondatachannel"
   | "onconnectionstatechange"
   | "ontrack"
+  | "close"
   // abstraction starts here
   | "start"
-  | "close"
-  | "id"
+  | "otherPeerId"
+  | "otherConnId"
 >;
 
 export interface PeerOptions {

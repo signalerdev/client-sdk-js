@@ -110,6 +110,37 @@ export class Session {
     return this._closeReason;
   }
 
+  get otherPeerId(): string {
+    return this.stream.otherPeerId;
+  };
+
+  get otherConnId(): number {
+    return this.stream.otherConnId;
+  }
+
+  start = () => {
+    this.handleNegotiation();
+  };
+
+  close(reason?: string) {
+    if (this.abort.signal.aborted) return;
+    this.abort.abort(reason);
+    for (const timer of this.timers) {
+      clearTimeout(timer);
+    }
+    this.timers = [];
+    this.stream.close();
+    this._closeReason = reason;
+    this.pc.close();
+
+    // RTCPeerConnection will not emit closed connection. This is a polyfill to get around it.
+    // https://stackoverflow.com/questions/66297347/why-does-calling-rtcpeerconnection-close-not-send-closed-event
+    const closeEvent = new Event("connectionstatechange");
+    this.setConnectionState("closed", closeEvent);
+
+    this.logger.debug("session closed", { connectionState: this.connectionState });
+  }
+
   constructor(
     private readonly stream: Stream,
     config: RTCConfiguration,
@@ -249,29 +280,6 @@ export class Session {
       },
     }, true);
   };
-
-  start = () => {
-    this.handleNegotiation();
-  };
-
-  close(reason?: string) {
-    if (this.abort.signal.aborted) return;
-    this.abort.abort(reason);
-    for (const timer of this.timers) {
-      clearTimeout(timer);
-    }
-    this.timers = [];
-    this.stream.close();
-    this._closeReason = reason;
-    this.pc.close();
-
-    // RTCPeerConnection will not emit closed connection. This is a polyfill to get around it.
-    // https://stackoverflow.com/questions/66297347/why-does-calling-rtcpeerconnection-close-not-send-closed-event
-    const closeEvent = new Event("connectionstatechange");
-    this.setConnectionState("closed", closeEvent);
-
-    this.logger.debug("session closed", { connectionState: this.connectionState });
-  }
 
   private handleNegotiation = async () => {
     try {
@@ -428,9 +436,5 @@ export class Session {
       this.logger.debug(`added ice: ${candidate.candidate}`);
     }
     this.pendingCandidates = [];
-  };
-
-  id = (): string => {
-    return `${this.stream.otherPeerId}:${this.stream.otherConnId}`;
   };
 }

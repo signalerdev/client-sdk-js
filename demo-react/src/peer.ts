@@ -19,9 +19,9 @@ export function usePeer(localStream: MediaStream | null) {
   const [sessions, setSessions] = useState<Record<string, SessionProps>>({});
 
   type UpdateHandler = (props: SessionProps) => void;
-  const update = useCallback((s: ISession, cb: UpdateHandler) => {
+  const update = useCallback((id: string, s: ISession, cb: UpdateHandler) => {
     setSessions((prev) => {
-      const session = prev[s.id()] || {
+      const session = prev[id] || {
         key: "",
         sess: s,
         remoteStream: null,
@@ -29,10 +29,10 @@ export function usePeer(localStream: MediaStream | null) {
       };
       cb(session);
 
-      session.key = `${s.id()}:${performance.now()}`;
+      session.key = `${id}:${performance.now()}`;
       return {
         ...prev,
-        [s.id()]: session,
+        [id]: session,
       };
     });
   }, []);
@@ -53,9 +53,10 @@ export function usePeer(localStream: MediaStream | null) {
     });
 
     p.onnewsession = (s) => {
+      const id = `${s.otherPeerId}:${s.otherConnId}`;
       s.ontrack = ({ streams }) => {
         console.log("ontrack", streams[0]);
-        update(s, (p) => {
+        update(id, s, (p) => {
           p.remoteStream = streams[0];
         });
       };
@@ -63,14 +64,14 @@ export function usePeer(localStream: MediaStream | null) {
       s.onconnectionstatechange = () => {
         console.log(s.connectionState);
         const loading = s.connectionState !== "connected";
-        update(s, (p) => {
+        update(id, s, (p) => {
           p.loading = loading;
         });
 
         if (s.connectionState === "closed") {
           setSessions((prev) => {
             const newSessions = { ...prev };
-            delete newSessions[s.id()];
+            delete newSessions[s.otherPeerId];
             return newSessions;
           });
         }
@@ -83,7 +84,7 @@ export function usePeer(localStream: MediaStream | null) {
       }
 
       s.start(); // decide to accept or reject
-      update(s, () => { });
+      update(id, s, () => { });
     };
     peer.current = p;
     p.start();
