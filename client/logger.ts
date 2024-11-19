@@ -1,16 +1,66 @@
-type LogHandler = typeof console.log;
+type LogObj = Record<string, unknown>;
+type LogHandler = (_obj: LogObj) => void;
+type LogSink = {
+  "DEBUG": LogHandler,
+  "INFO": LogHandler,
+  "WARN": LogHandler,
+  "ERROR": LogHandler,
+}
+
+export const DEFAULT_LOG_SINK: LogSink = {
+  DEBUG: console.debug,
+  INFO: console.info,
+  WARN: console.warn,
+  ERROR: console.error,
+};
+
+export const PRETTY_LOG_SINK: LogSink = {
+  DEBUG: (o) => console.debug(pretty(o)),
+  INFO: (o) => console.info(pretty(o)),
+  WARN: (o) => console.warn(pretty(o)),
+  ERROR: (o) => console.error(pretty(o)),
+};
+
+export function flatten(obj: LogObj, pairs: Record<string, string[]>, parentKey = "root") {
+  const sep = '.';
+
+  for (const key in obj) {
+    if (typeof obj[key] === 'object' && obj[key] !== null) {
+      const newKey = parentKey + sep + key;
+      flatten(obj[key] as LogObj, pairs, newKey);
+    } else {
+      const p = pairs[parentKey] || [];
+      p.push(`${key}=${obj[key]}`);
+      pairs[parentKey] = p;
+    }
+  }
+}
+
+export function pretty(obj: LogObj) {
+  const pairs: Record<string, string[]> = {};
+  flatten(obj, pairs);
+
+  const lines: string[] = [];
+  for (const k in pairs) {
+    lines.push(`[${k}] ${pairs[k].join(' ')}`);
+  }
+  return lines.join('\n');
+}
 
 export class Logger {
-  private readonly obj: Record<string, unknown>;
-  constructor(public readonly name: string, obj?: Record<string, unknown>) {
+  private readonly obj: LogObj;
+  private readonly sink: LogSink;
+  constructor(public readonly name: string, obj?: LogObj, sink?: LogSink) {
     if (!obj) obj = {};
+    if (!sink) sink = DEFAULT_LOG_SINK;
+    this.sink = sink;
     this.obj = { ...obj, name };
   }
 
   private log(
     handler: LogHandler,
     message: string,
-    obj?: Record<string, unknown>,
+    obj?: LogObj,
   ) {
     const o = obj || {};
     handler({
@@ -21,24 +71,24 @@ export class Logger {
     });
   }
 
-  debug(message: string, obj?: Record<string, unknown>) {
-    this.log(console.debug, message, obj);
+  debug(message: string, obj?: LogObj) {
+    this.log(this.sink.DEBUG, message, obj);
   }
 
-  info(message: string, obj?: Record<string, unknown>) {
-    this.log(console.info, message, obj);
+  info(message: string, obj?: LogObj) {
+    this.log(this.sink.INFO, message, obj);
   }
 
-  warn(message: string, obj?: Record<string, unknown>) {
-    this.log(console.warn, message, obj);
+  warn(message: string, obj?: LogObj) {
+    this.log(this.sink.WARN, message, obj);
   }
 
-  error(message: string, obj?: Record<string, unknown>) {
-    this.log(console.error, message, obj);
+  error(message: string, obj?: LogObj) {
+    this.log(this.sink.ERROR, message, obj);
   }
 
-  sub(name: string, obj?: Record<string, unknown>) {
+  sub(name: string, obj?: LogObj) {
     if (!obj) obj = {};
-    return new Logger(this.name + "." + name, { ...this.obj, ...obj });
+    return new Logger(this.name + "." + name, { ...this.obj, ...obj }, this.sink);
   }
 }

@@ -1,6 +1,6 @@
 import { type ITunnelClient, TunnelClient } from "./tunnel.client";
 import { Transport } from "./transport";
-import { Logger } from "./logger";
+import { Logger, PRETTY_LOG_SINK } from "./logger";
 import { Session } from "./session";
 import { RpcError, UnaryCall, RpcOptions } from "@protobuf-ts/runtime-rpc";
 import { TwirpErrorCode, TwirpFetchTransport } from "@protobuf-ts/twirp-transport";
@@ -43,12 +43,13 @@ export class Peer {
   public readonly peerId: string;
 
   constructor(
+    logger: Logger,
     client: ITunnelClient,
     opts: PeerOptions,
     isRecoverable: (_err: Error) => boolean,
   ) {
     this.peerId = opts.peerId;
-    this.logger = new Logger("peer", { peerId: this.peerId });
+    this.logger = logger.sub("peer", { peerId: this.peerId });
     this.sessions = [];
     this._state = "new";
 
@@ -126,6 +127,11 @@ export async function createPeer(opts: PeerOptions): Promise<Peer> {
   const twirp = new TwirpFetchTransport({
     baseUrl: opts.baseUrl,
     sendJson: false,
+    jsonOptions: {
+      emitDefaultValues: true, // treat zero values as values instead of undefined.
+      enumAsInteger: true,
+      ignoreUnknownFields: true,
+    },
     interceptors: [
       {
         // adds auth header to unary requests
@@ -152,6 +158,7 @@ export async function createPeer(opts: PeerOptions): Promise<Peer> {
     });
   }
   const peer = new Peer(
+    new Logger("signalerdev", undefined, PRETTY_LOG_SINK),
     client,
     { ...opts, "iceServers": iceServers },
     isTwirpRecoverable,

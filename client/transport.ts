@@ -193,6 +193,7 @@ export class Transport {
 
   private handleMessages = (msgs: Message[]) => {
     for (const msg of msgs) {
+      this.logger.debug("received", { msg: msg });
       if (this.abort.signal.aborted) return;
       if (!msg.header) continue;
 
@@ -297,6 +298,7 @@ export class Transport {
           abort: signal,
           timeout: POLL_TIMEOUT_MS,
         });
+        this.logger.debug("sent", { msg });
         return;
       } catch (err) {
         if (err instanceof Error) {
@@ -329,7 +331,7 @@ export class Transport {
 // Stream allows multiplexing on top of Transport, and
 // configuring order and reliability mode
 export class Stream {
-  private readonly logger: Logger;
+  public readonly logger: Logger;
   private abort: AbortController;
   public recvq: Queue;
   public ackedbuf: Record<string, boolean>;

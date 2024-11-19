@@ -153,7 +153,7 @@ export class Session {
     // for implementing fixed "polite" role for lite ICE.
     this.impolite = this.stream.connId > this.stream.otherConnId;
     this.abort = new AbortController();
-    this.logger = new Logger("session", {
+    this.logger = stream.logger.sub("session", {
       role: this.impolite ? "impolite" : "polite",
     });
     this.generationCounter = 0;
