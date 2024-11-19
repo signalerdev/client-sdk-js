@@ -1,5 +1,5 @@
 import { chromium, firefox, devices, type Page } from "playwright";
-import { test, expect } from '@playwright/test';
+import { test, expect, Browser } from '@playwright/test';
 import assert from 'node:assert';
 
 // const URL = "https://meet.lukas-coding.us";
@@ -38,25 +38,52 @@ function launchFirefox() {
   })
 }
 
-test('connect', async ({ }) => {
-  // Create two isolated browser contexts
-  const browserChromium = await launchChromium();
-  const browserFirefox = browserChromium;
-  // const browserFirefox = await launchFirefox();
+function getAllPairs<T>(list: T[]): [T, T][] {
+  const pairs: [T, T][] = [];
 
-  const contextA = await browserChromium.newContext();
-  const contextB = await browserFirefox.newContext();
+  for (let i = 0; i < list.length; i++) {
+    for (let j = i; j < list.length; j++) {
+      pairs.push([list[i], list[j]]);
+    }
+  }
 
-  const pageA = await contextA.newPage();
-  const pageB = await contextB.newPage();
+  return pairs;
+}
 
-  await pageA.goto(URL);
-  await pageB.goto(URL);
+interface BrowserInfo {
+  name: string;
+  builder: () => Promise<Browser>;
+}
 
-  const peerA = `__test_chromium_a`;
-  const peerB = `__test_firefox_b`;
-  await Promise.all([
-    connect(pageA, peerA, peerB),
-    connect(pageB, peerB, peerA)
-  ]);
+test.describe("basic", () => {
+  const browsers: BrowserInfo[] = [
+    { name: "chromium", builder: launchChromium },
+    { name: "firefox", builder: launchFirefox },
+  ];
+  const pairs = getAllPairs(browsers);
+
+  for (const p of pairs) {
+    const [browserA, browserB] = p;
+
+    test(`${browserA.name}_${browserB.name}`, async ({ }) => {
+      const bA = await browserA.builder();
+      const bB = await browserB.builder();
+      const contextA = await bA.newContext();
+      const contextB = await bB.newContext();
+
+      const pageA = await contextA.newPage();
+      const pageB = await contextB.newPage();
+
+      await pageA.goto(URL);
+      await pageB.goto(URL);
+
+      const peerA = `__${browserA.name}_${Math.random() * 2 ** 32}`;
+      const peerB = `__${browserB.name}_${Math.random() * 2 ** 32}`;
+      await Promise.all([
+        connect(pageA, peerA, peerB),
+        connect(pageB, peerB, peerA)
+      ]);
+    });
+  }
 });
+
