@@ -46,8 +46,8 @@ export function usePeer(localStream: MediaStream | null) {
     const token = await resp.text();
     const p = await createPeer({
       baseUrl: BASE_URL,
-      peerId,
       groupId: DEFAULT_GROUP,
+      peerId,
       token,
       iceServers: [],
     });

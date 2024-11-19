@@ -26,7 +26,7 @@ export interface PeerOptions {
   groupId: string;
   peerId: string;
   token: string;
-  iceServers: RTCIceServer[];
+  iceServers?: RTCIceServer[];
 }
 
 // Peer is a mediator for signaling and all sessions
