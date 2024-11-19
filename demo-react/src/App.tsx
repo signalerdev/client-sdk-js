@@ -1,12 +1,11 @@
 import { useEffect, useRef, useState } from "react";
-import { usePeer } from "./peer.ts";
+import { usePeerStore } from "./peer.ts";
 
 export default function App() {
   const [peerId, setPeerId] = useState("");
   const [otherPeerId, setOtherPeerId] = useState("");
   const [stream, setStream] = useState<MediaStream | null>(null);
-  const [isLive, setIsLive] = useState(false);
-  const peer = usePeer(stream);
+  const peer = usePeerStore();
 
   useEffect(() => {
     (async () => {
@@ -15,20 +14,15 @@ export default function App() {
     })();
   }, []);
 
-  useEffect(() => {
-    if (isLive) peer.start(peerId);
-    else peer.stop();
-  }, [isLive, peerId, peer]);
-
   return (
     <>
       <nav className="bottom">
-        {(!stream || !isLive)
+        {(!stream || !peer.ref)
           ? (
             <form
               onSubmit={(e) => {
                 e.preventDefault();
-                setIsLive(true);
+                peer.start(peerId, stream);
               }}
               className="responsive"
             >
@@ -42,7 +36,7 @@ export default function App() {
                     onChange={(e) => setPeerId(e.target.value)}
                   />
                 </div>
-                <button type="submit" disabled={!stream} value="Go Live">
+                <button type="submit" disabled={!stream || peer.loading} value="Go Live">
                   Go Live
                 </button>
               </nav>
@@ -65,8 +59,8 @@ export default function App() {
                     onChange={(e) => setOtherPeerId(e.target.value)}
                   />
                 </div>
-                <button type="submit">Connect</button>
-                <button className="secondary" onClick={() => setIsLive(false)}>
+                <button type="submit" disabled={peer.loading}>Connect</button>
+                <button className="secondary" onClick={() => peer.stop()}>
                   Stop
                 </button>
               </nav>

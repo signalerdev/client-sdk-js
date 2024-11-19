@@ -29,12 +29,17 @@ export interface PeerOptions {
   iceServers?: RTCIceServer[];
 }
 
+export type PeerState = "new" | "closed";
+
 // Peer is a mediator for signaling and all sessions
 export class Peer {
   private transport: Transport;
   private readonly logger: Logger;
-  public onnewsession = (_s: ISession) => { };
   private sessions: Session[];
+  private _state: PeerState;
+
+  public onnewsession = (_s: ISession) => { };
+  public onstatechange = () => { };
   public readonly peerId: string;
 
   constructor(
@@ -45,6 +50,7 @@ export class Peer {
     this.peerId = opts.peerId;
     this.logger = new Logger("peer", { peerId: this.peerId });
     this.sessions = [];
+    this._state = "new";
 
     const rtcConfig: RTCConfiguration = {
       bundlePolicy: "balanced",
@@ -64,19 +70,35 @@ export class Peer {
       this.sessions.push(sess);
       this.onnewsession(sess);
     };
+    this.transport.onclosed = () => {
+      this.close();
+    };
   }
 
   start() {
+    if (this._state === "closed") throw new Error("peer is already closed");
     this.transport.listen();
   }
 
   close() {
     this.sessions = [];
     this.transport.close();
+    this.setState("closed");
   }
 
   connect(otherGroupId: string, otherPeerID: string, timeoutMs: number) {
     return this.transport.connect(otherGroupId, otherPeerID, timeoutMs);
+  }
+
+  get state() {
+    return this._state;
+  }
+
+  private setState(s: PeerState) {
+    if (s === this._state) return;
+
+    this._state = s;
+    this.onstatechange();
   }
 }
 

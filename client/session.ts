@@ -256,7 +256,7 @@ export class Session {
     if (elapsed < ICE_RESTART_DEBOUNCE_DELAY_MS) {
       // schedule ice restart after some delay;
       const delay = ICE_RESTART_DEBOUNCE_DELAY_MS - elapsed;
-      const timerId = setTimeout(() => {
+      const timerId = window.setTimeout(() => {
         this.triggerIceRestart();
         this.timers = this.timers.filter((v) => v === timerId);
       }, delay);
