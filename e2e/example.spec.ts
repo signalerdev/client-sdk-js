@@ -3,7 +3,7 @@ import { test, expect, Browser } from '@playwright/test';
 import assert from 'node:assert';
 
 // const URL = "https://meet.lukas-coding.us";
-const URL = "http://localhost:5173";
+const URL = "http://localhost:5173/?mock";
 
 async function connect(page: Page, peerId: string, otherPeerId: string) {
   await page.getByPlaceholder('You').click();
@@ -18,6 +18,8 @@ async function connect(page: Page, peerId: string, otherPeerId: string) {
 
   const remoteVideo = page.getByTestId(otherPeerId);
   await remoteVideo.evaluate((v: HTMLVideoElement) => !v.paused);
+
+  await page.getByRole('button', { name: 'Stop' }).click();
 }
 
 function launchChromium() {
@@ -55,35 +57,51 @@ interface BrowserInfo {
   builder: () => Promise<Browser>;
 }
 
-test.describe("basic", () => {
-  const browsers: BrowserInfo[] = [
-    { name: "chromium", builder: launchChromium },
-    { name: "firefox", builder: launchFirefox },
-  ];
-  const pairs = getAllPairs(browsers);
+function randId() {
+  return Math.floor(Math.random() * 2 ** 32);
+}
 
-  for (const p of pairs) {
-    const [browserA, browserB] = p;
+// test.describe("basic", () => {
+//   const browsers: BrowserInfo[] = [
+//     { name: "chromium", builder: launchChromium },
+//     { name: "firefox", builder: launchFirefox },
+//   ];
+//   const pairs = getAllPairs(browsers);
+//
+//   for (const p of pairs) {
+//     const [browserA, browserB] = p;
+//
+//
+//     // test.use({ userAgent: 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10.15; rv:132.0) Gecko/20100101 Firefox/132.0' });
+//     test(`${browserA.name}_${browserB.name}`, async ({ }) => {
+//       // const bA = await browserA.builder();
+//       const bB = await browserB.builder();
+//       // const contextA = await bA.newContext();
+//       const contextB = await bB.newContext();
+//
+//       // const pageA = await contextA.newPage();
+//       const pageB = await contextB.newPage();
+//
+//       // await pageA.goto(URL);
+//       await pageB.goto(URL);
+//
+//       // const peerA = `__${browserA.name}_${bA.version()}_${randId()}`;
+//       const peerA = "a";
+//       const peerB = `__${browserB.name}_${bB.version()}_${randId()}`;
+//       await Promise.all([
+//         // connect(pageA, peerA, peerB),
+//         connect(pageB, peerB, peerA)
+//       ]);
+//     });
+//   }
+// });
 
-    test(`${browserA.name}_${browserB.name}`, async ({ }) => {
-      const bA = await browserA.builder();
-      const bB = await browserB.builder();
-      const contextA = await bA.newContext();
-      const contextB = await bB.newContext();
+test(`connect`, async ({ browser, browserName }) => {
+  const context = await browser.newContext();
+  const page = await context.newPage();
+  await page.goto(URL);
 
-      const pageA = await contextA.newPage();
-      const pageB = await contextB.newPage();
-
-      await pageA.goto(URL);
-      await pageB.goto(URL);
-
-      const peerA = `__${browserA.name}_${Math.random() * 2 ** 32}`;
-      const peerB = `__${browserB.name}_${Math.random() * 2 ** 32}`;
-      await Promise.all([
-        connect(pageA, peerA, peerB),
-        connect(pageB, peerB, peerA)
-      ]);
-    });
-  }
+  const peerA = "a";
+  const peerB = `__${browserName}_${randId()}`;
+  await connect(page, peerB, peerA);
 });
-

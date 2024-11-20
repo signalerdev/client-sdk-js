@@ -1,6 +1,6 @@
 import { type ITunnelClient, TunnelClient } from "./tunnel.client";
 import { Transport } from "./transport";
-import { Logger, PRETTY_LOG_SINK } from "./logger";
+import { DEFAULT_LOG_SINK, Logger, PRETTY_LOG_SINK } from "./logger";
 import { Session } from "./session";
 import { RpcError, UnaryCall, RpcOptions } from "@protobuf-ts/runtime-rpc";
 import { TwirpErrorCode, TwirpFetchTransport } from "@protobuf-ts/twirp-transport";
@@ -158,7 +158,7 @@ export async function createPeer(opts: PeerOptions): Promise<Peer> {
     });
   }
   const peer = new Peer(
-    new Logger("signalerdev", undefined, PRETTY_LOG_SINK),
+    new Logger("signalerdev", undefined, DEFAULT_LOG_SINK),
     client,
     { ...opts, "iceServers": iceServers },
     isTwirpRecoverable,
