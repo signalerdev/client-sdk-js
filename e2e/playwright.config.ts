@@ -42,7 +42,6 @@ export default defineConfig({
         ...devices['Desktop Chrome'],
         launchOptions: {
           args: [
-            // '--disable-web-security',
             '--use-fake-ui-for-media-stream',
             '--use-fake-device-for-media-stream',
             '--disable-gesture-requirement-for-media-playback',
@@ -70,24 +69,24 @@ export default defineConfig({
     },
 
     /* Test against mobile viewports. */
-    // {
-    //   name: 'Mobile Chrome',
-    //   use: { ...devices['Pixel 5'] },
-    // },
-    // {
-    //   name: 'Mobile Safari',
-    //   use: { ...devices['iPhone 12'] },
-    // },
+    {
+      name: 'chrome-mobile',
+      use: { ...devices['Pixel 5'] },
+    },
+    {
+      name: 'safari-mobile',
+      use: { ...devices['iPhone 12'] },
+    },
 
     /* Test against branded browsers. */
-    // {
-    //   name: 'Microsoft Edge',
-    //   use: { ...devices['Desktop Edge'], channel: 'msedge' },
-    // },
-    // {
-    //   name: 'Google Chrome',
-    //   use: { ...devices['Desktop Chrome'], channel: 'chrome' },
-    // },
+    {
+      name: 'edge',
+      use: { ...devices['Desktop Edge'], channel: 'msedge' },
+    },
+    {
+      name: 'chrome',
+      use: { ...devices['Desktop Chrome'], channel: 'chrome' },
+    },
   ],
 
   /* Run your local dev server before starting the tests */
