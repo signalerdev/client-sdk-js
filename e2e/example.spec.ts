@@ -5,19 +5,40 @@ import assert from 'node:assert';
 // const URL = "https://meet.lukas-coding.us";
 const URL = "http://localhost:5173/?mock";
 
+async function waitForStableVideo(page: Page, peerId: string, timeoutMs: number, delayMs = 0) {
+  // return page.waitForFunction(({ peerId, durationSeconds }) => {
+  //   const video = document.querySelector(`video[data-testid=${peerId}]`) as HTMLVideoElement;
+  //   return !!video && !video.paused && video.currentTime > durationSeconds;
+  // }, { peerId, durationSeconds });
+
+  const video = page.getByTestId(peerId);
+  const start = performance.now();
+
+  while ((performance.now() - start) < timeoutMs) {
+    try {
+      expect(await video.evaluate((v: HTMLVideoElement) => v.paused)).toBe(false);
+      expect(await video.evaluate((v: HTMLVideoElement) => v.ended)).toBe(false);
+      expect(await video.evaluate((v: HTMLVideoElement) => v.readyState)).toBe(4);
+      await page.waitForTimeout(delayMs).catch(() => { });
+      return;
+    } catch (_e) {
+      await page.waitForTimeout(1000).catch(() => { });
+    }
+  }
+
+  throw new Error("waitForStableVideo timeout");
+}
+
 async function connect(page: Page, peerId: string, otherPeerId: string) {
   await page.getByPlaceholder('You').click();
   await page.getByPlaceholder('You').fill(peerId);
-  const localVideo = page.getByTestId(peerId);
-  await localVideo.evaluate((v: HTMLVideoElement) => !v.paused);
+  await waitForStableVideo(page, peerId, 5_000);
 
   await page.getByRole('button', { name: 'Go Live' }).click();
   await page.getByPlaceholder('Other').click();
   await page.getByPlaceholder('Other').fill(otherPeerId);
   await page.getByRole('button', { name: 'Connect' }).click();
-
-  const remoteVideo = page.getByTestId(otherPeerId);
-  await remoteVideo.evaluate((v: HTMLVideoElement) => !v.paused);
+  await waitForStableVideo(page, otherPeerId, 10_000, 5_000);
 
   await page.getByRole('button', { name: 'Stop' }).click();
 }
