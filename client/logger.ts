@@ -21,8 +21,10 @@ export const PRETTY_LOG_SINK: LogSink = {
   ERROR: (o) => console.error(pretty(o)),
 };
 
-export function flatten(obj: LogObj, pairs: Record<string, string[]>, parentKey = "root") {
+export function flatten(obj: LogObj, pairs: Record<string, string[]>, parentKey = "root", visited = new Set<LogObj>) {
   const sep = '.';
+  if (visited.has(obj)) return; // Stop if already visited
+  visited.add(obj);
 
   for (const key in obj) {
     if (typeof obj[key] === 'object' && obj[key] !== null) {

@@ -118,10 +118,6 @@ export class Session {
     return this.stream.otherConnId;
   }
 
-  start = () => {
-    this.handleNegotiation();
-  };
-
   close(reason?: string) {
     if (this.abort.signal.aborted) return;
     this.abort.abort(reason);
@@ -201,6 +197,7 @@ export class Session {
     };
     this.pc.onnegotiationneeded = this.handleNegotiation.bind(this);
     this.pc.onicecandidate = ({ candidate }) => {
+      this.logger.debug("onicecandidate", { candidate });
       const ice: ICECandidate = {
         candidate: "",
         sdpMLineIndex: 0,

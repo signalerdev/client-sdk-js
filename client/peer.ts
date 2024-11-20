@@ -16,7 +16,6 @@ export type ISession = Pick<
   | "ontrack"
   | "close"
   // abstraction starts here
-  | "start"
   | "otherPeerId"
   | "otherConnId"
 >;
@@ -158,7 +157,7 @@ export async function createPeer(opts: PeerOptions): Promise<Peer> {
     });
   }
   const peer = new Peer(
-    new Logger("signalerdev", undefined, DEFAULT_LOG_SINK),
+    new Logger("signalerdev", undefined, PRETTY_LOG_SINK),
     client,
     { ...opts, "iceServers": iceServers },
     isTwirpRecoverable,

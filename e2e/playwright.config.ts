@@ -41,9 +41,11 @@ export default defineConfig({
       use: {
         ...devices['Desktop Chrome'],
         launchOptions: {
-          args: ['--disable-web-security',
+          args: [
+            // '--disable-web-security',
             '--use-fake-ui-for-media-stream',
-            '--use-fake-device-for-media-stream'
+            '--use-fake-device-for-media-stream',
+            '--disable-gesture-requirement-for-media-playback',
           ]
         }
       },

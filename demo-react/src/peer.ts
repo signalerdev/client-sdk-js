@@ -79,8 +79,6 @@ export const usePeerStore = create<PeerState>((set, get) => ({
             remoteStream: null,
           };
         }));
-
-        s.start();
       };
 
       p.onstatechange = () => {
