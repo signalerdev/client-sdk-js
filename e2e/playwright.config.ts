@@ -20,7 +20,8 @@ export default defineConfig({
   /* Retry on CI only */
   retries: process.env.CI ? 2 : 0,
   /* Opt out of parallel tests on CI. */
-  workers: process.env.CI ? 1 : 1,
+  // workers: process.env.CI ? 1 : 1,
+  workers: undefined,
   /* Reporter to use. See https://playwright.dev/docs/test-reporters */
   reporter: 'html',
   /* Shared settings for all the projects below. See https://playwright.dev/docs/api/class-testoptions. */
@@ -35,55 +36,18 @@ export default defineConfig({
   /* Configure projects for major browsers */
   projects: [
     {
-      name: 'chromium',
+      name: 'local',
       use: {
-        ...devices['Desktop Chrome'],
-        launchOptions: {
-          args: [
-            '--use-fake-ui-for-media-stream',
-            '--use-fake-device-for-media-stream',
-            '--disable-gesture-requirement-for-media-playback',
-          ]
-        }
+        baseURL: 'http://localhost:5173/',
       },
+      retries: 0,
     },
-
     {
-      name: 'firefox',
+      name: 'production',
       use: {
-        ...devices['Desktop Firefox'],
-        launchOptions: {
-          firefoxUserPrefs: {
-            'media.navigator.streams.fake': true,
-            'media.navigator.permission.disabled': true,
-          }
-        }
+        baseURL: 'https://meet.lukas-coding.us/',
       },
-    },
-
-    {
-      name: 'webkit',
-      use: { ...devices['Desktop Safari'] },
-    },
-
-    /* Test against mobile viewports. */
-    {
-      name: 'chrome-mobile',
-      use: { ...devices['Pixel 5'] },
-    },
-    {
-      name: 'safari-mobile',
-      use: { ...devices['iPhone 12'] },
-    },
-
-    /* Test against branded browsers. */
-    {
-      name: 'edge',
-      use: { ...devices['Desktop Edge'], channel: 'msedge' },
-    },
-    {
-      name: 'chrome',
-      use: { ...devices['Desktop Chrome'], channel: 'chrome' },
+      retries: 2,
     },
   ],
 

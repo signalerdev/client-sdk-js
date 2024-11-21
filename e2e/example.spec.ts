@@ -1,9 +1,6 @@
 import { chromium as bChromium, firefox as bFirefox, webkit as bWebkit, type Page } from "playwright";
 import { test, expect, Browser, } from '@playwright/test';
-import assert from 'node:assert';
 
-// const URL = "https://meet.lukas-coding.us";
-const URL = "http://localhost:5173/?mock";
 
 async function waitForStableVideo(page: Page, peerId: string, timeoutMs: number, delayMs = 0) {
   // return page.waitForFunction(({ peerId, durationSeconds }) => {
@@ -64,10 +61,16 @@ test.describe("basic", () => {
   const pairs: [string, string][] = getAllPairs(browserNames);
 
   test.beforeAll(async () => {
+    const chromiumFake = {
+      args: [
+        '--use-fake-ui-for-media-stream', // Avoids the need for user interaction with media dialogs
+        '--use-fake-device-for-media-stream'
+      ]
+    };
     const [chromium, chrome, msedge, webkit] = await Promise.all([
-      bChromium.launch(),
-      bChromium.launch({ channel: "chrome" }),
-      bChromium.launch({ channel: "msedge" }),
+      bChromium.launch({ ...chromiumFake }),
+      bChromium.launch({ ...chromiumFake, channel: "chrome" }),
+      bChromium.launch({ ...chromiumFake, channel: "msedge" }),
       bWebkit.launch(),
     ])
 
@@ -78,19 +81,20 @@ test.describe("basic", () => {
   });
 
   for (const [bA, bB] of pairs) {
-    test(`${bA}_${bB}`, async () => {
+    test(`${bA}_${bB}`, async ({ baseURL }) => {
+      const url = (b: string) => b === "webkit" ? baseURL + "?mock" : baseURL;
       const peerA = `__${bA}_${randId()}`;
       const peerB = `__${bB}_${randId()}`;
 
       // Launch browserA for pageA
       const contextA = await browsers[bA].newContext();
       const pageA = await contextA.newPage();
-      await pageA.goto(URL);
+      await pageA.goto(url(bA));
 
       // Launch browserB for pageB
       const contextB = await browsers[bB].newContext();
       const pageB = await contextB.newPage();
-      await pageB.goto(URL);
+      await pageB.goto(url(bB));
 
       try {
         const [closeA, closeB] = await Promise.all([
@@ -106,10 +110,10 @@ test.describe("basic", () => {
   }
 });
 
-test.skip(`connect`, async ({ browser, browserName }) => {
+test.skip(`connect`, async ({ browser, browserName, baseURL }) => {
   const context = await browser.newContext();
   const page = await context.newPage();
-  await page.goto(URL);
+  await page.goto(baseURL!);
 
   const peerA = "a";
   const peerB = `__${browserName}_${randId()}`;
