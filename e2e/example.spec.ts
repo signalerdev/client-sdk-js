@@ -1,5 +1,5 @@
-import { chromium, firefox, type Page } from "playwright";
-import { test as base, expect, Browser, devices, webkit } from '@playwright/test';
+import { chromium as bChromium, firefox as bFirefox, webkit as bWebkit, type Page } from "playwright";
+import { test, expect, Browser, } from '@playwright/test';
 import assert from 'node:assert';
 
 // const URL = "https://meet.lukas-coding.us";
@@ -47,48 +47,62 @@ function randId() {
   return Math.floor(Math.random() * 2 ** 32);
 }
 
-const test = base.extend({
-  browserType: async ({ browserName }, use) => {
-    const browserTypes = {
-      'chromium': await chromium.launch(),
-      'chrome': await chromium.launch({ channel: "chrome" }),
-      'msedge': await chromium.launch({ channel: "msedge" }),
-      'webkit': await webkit.launch(),
-      // 'firefox': await firefox.launch(), // Uncomment when Firefox issue is resolved
-    };
-    await use(browserTypes[browserName]);
-  },
-  page: async ({ browserType }, use) => {
-    const context = await browserType.newContext();
-    const page = await context.newPage();
-    await page.goto(URL);
-    await use(page);
-    await context.close();
-  }
-});
+function getAllPairs<T>(list: T[]): [T, T][] {
+  const pairs: [T, T][] = [];
 
-test.describe.parallel("basic", () => {
-  const browserNames = ['chromium', 'chrome', 'msedge', 'webkit' /*, 'firefox'*/];
-
-  for (const browserNameA of browserNames) {
-    for (const browserNameB of browserNames) {
-      test(`${browserNameA}_${browserNameB}`, async ({ page: pageA, browserType: browserTypeA }) => {
-        const peerA = `__${browserNameA}_${randId()}`;
-        const peerB = `__${browserNameB}_${randId()}`;
-
-        const pageB = await browserTypeA.newPage(); // Create a second page in the same browser
-        await pageB.goto(URL);
-
-        try {
-          await Promise.all([
-            connect(pageA, peerA, peerB),
-            connect(pageB, peerB, peerA)
-          ]);
-        } finally {
-          await pageB.close();
-        }
-      }, { browserName: browserNameA });
+  for (let i = 0; i < list.length; i++) {
+    for (let j = i; j < list.length; j++) {
+      pairs.push([list[i], list[j]]);
     }
+  }
+  return pairs;
+}
+
+test.describe("basic", () => {
+  const browserNames = ["chromium", "chrome", "msedge", "webkit"];
+  const browsers: Browser[] = [];
+  const pairs: [string, string][] = getAllPairs(browserNames);
+
+  test.beforeAll(async () => {
+    const [chromium, chrome, msedge, webkit] = await Promise.all([
+      bChromium.launch(),
+      bChromium.launch({ channel: "chrome" }),
+      bChromium.launch({ channel: "msedge" }),
+      bWebkit.launch(),
+    ])
+
+    browsers["chromium"] = chromium;
+    browsers["chrome"] = chrome;
+    browsers["msedge"] = msedge;
+    browsers["webkit"] = webkit;
+  });
+
+  for (const [bA, bB] of pairs) {
+    test(`${bA}_${bB}`, async () => {
+      const peerA = `__${bA}_${randId()}`;
+      const peerB = `__${bB}_${randId()}`;
+
+      // Launch browserA for pageA
+      const contextA = await browsers[bA].newContext();
+      const pageA = await contextA.newPage();
+      await pageA.goto(URL);
+
+      // Launch browserB for pageB
+      const contextB = await browsers[bB].newContext();
+      const pageB = await contextB.newPage();
+      await pageB.goto(URL);
+
+      try {
+        const [closeA, closeB] = await Promise.all([
+          connect(pageA, peerA, peerB),
+          connect(pageB, peerB, peerA)
+        ]);
+        await Promise.all([closeA(), closeB()]);
+      } finally {
+        await contextA.close();
+        await contextB.close();
+      }
+    });
   }
 });
 
