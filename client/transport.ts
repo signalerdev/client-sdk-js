@@ -166,7 +166,7 @@ export class Transport {
         if (err instanceof Error) {
           reason = err.message;
           if (!this.isRecoverable(err)) {
-            this.logger.debug("unrecoverable error, force closing", { err });
+            this.logger.warn("unrecoverable error, force closing", { err });
             this.close(reason);
             return;
           }

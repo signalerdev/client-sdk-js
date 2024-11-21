@@ -160,10 +160,28 @@ export class Session {
     stream.onpayload = (msg) => this.handleMessage(msg);
     stream.onclosed = (reason) => this.close(reason);
 
-    this.pc.oniceconnectionstatechange = () => {
+    this.pc.oniceconnectionstatechange = async () => {
+      const stats = await this.pc.getStats();
+      const pair: unknown[] = [];
+      const local: unknown[] = [];
+      const remote: unknown[] = [];
+      // https://developer.mozilla.org/en-US/docs/Web/API/RTCStatsReport#the_statistic_types
+      stats.forEach((report: RTCStats) => {
+        if (report.type === 'candidate-pair') {
+          pair.push(report);
+        } else if (report.type === 'local-candidate') {
+          local.push(report);
+        } else if (report.type === 'remote-candidate') {
+          remote.push(report);
+        }
+      });
+
       this.logger.debug("iceconnectionstate changed", {
         "connectionstate": this.pc.connectionState,
         "iceconnectionstate": this.pc.iceConnectionState,
+        local,
+        remote,
+        pair,
       });
     };
 
