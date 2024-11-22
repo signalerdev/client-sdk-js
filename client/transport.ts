@@ -236,7 +236,7 @@ export class Transport {
     }
   };
 
-  async connect(otherGroupId: string, otherPeerId: string, timeoutMs: number) {
+  async connect(otherGroupId: string, otherPeerId: string, signal: AbortSignal) {
     const payload: MessagePayload = {
       payloadType: {
         oneofKind: "join",
@@ -254,24 +254,19 @@ export class Transport {
       reliable: false,
     };
 
-    const start = performance.now();
-
-    while ((performance.now() - start) < timeoutMs) {
-      await this.send(this.abort.signal, {
+    let found = false;
+    const joinedSignal = joinSignals(signal, this.abort.signal);
+    while (!joinedSignal.aborted && !found) {
+      await this.send(joinedSignal, {
         header,
         payload,
       });
-      await this.asleep(POLL_RETRY_MAX_DELAY_MS, this.abort.signal).catch(() => { });
+      await this.asleep(POLL_RETRY_MAX_DELAY_MS, joinedSignal).catch(() => { });
 
-      const found = this.streams.find((s) =>
+      found = !!this.streams.find((s) =>
         s.otherGroupId === otherGroupId && s.otherPeerId === otherPeerId
       );
-      if (found) {
-        return;
-      }
     }
-
-    throw new Error("connect failed with a timeout");
   }
 
   async send(signal: AbortSignal, msg: Message) {

@@ -37,7 +37,11 @@ export default function App() {
                   />
                 </div>
                 <button type="submit" disabled={!stream || peer.loading} value="Go Live">
-                  Go Live
+                  {peer.loading
+                    ? <progress className="circle small"></progress>
+                    : <span>Go Live</span>
+                  }
+
                 </button>
               </nav>
             </form>
@@ -59,7 +63,12 @@ export default function App() {
                     onChange={(e) => setOtherPeerId(e.target.value)}
                   />
                 </div>
-                <button type="submit" disabled={peer.loading}>Connect</button>
+                <button type="submit" disabled={peer.loading}>
+                  {peer.loading
+                    ? <progress className="circle small"></progress>
+                    : <span>Connect</span>
+                  }
+                </button>
                 <button className="secondary" onClick={() => peer.stop()}>
                   Stop
                 </button>

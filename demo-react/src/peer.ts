@@ -5,7 +5,7 @@ import { produce } from "immer";
 const BASE_URL = "https://demo.lukas-coding.us/twirp";
 // const BASE_URL = "http://localhost:3000/twirp";
 const DEFAULT_GROUP = "default";
-const DEFAULT_CONNECT_TIMEOUT_MS = 10_000;
+const DEFAULT_CONNECT_TIMEOUT_MS = 3_000;
 
 interface SessionProps {
   key: number;
@@ -99,7 +99,10 @@ export const usePeerStore = create<PeerState>((set, get) => ({
   },
   connect: async (otherPeerId) => {
     set({ loading: true });
-    await get().ref?.connect(DEFAULT_GROUP, otherPeerId, DEFAULT_CONNECT_TIMEOUT_MS);
+    const abort = new AbortController();
+    const timeoutId = window.setTimeout(() => abort.abort(), DEFAULT_CONNECT_TIMEOUT_MS);
+    await get().ref?.connect(DEFAULT_GROUP, otherPeerId, abort.signal);
+    window.clearTimeout(timeoutId);
     set({ loading: false });
   }
 }));

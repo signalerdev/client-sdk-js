@@ -90,8 +90,8 @@ export class Peer {
     this.setState("closed");
   }
 
-  connect(otherGroupId: string, otherPeerID: string, timeoutMs: number) {
-    return this.transport.connect(otherGroupId, otherPeerID, timeoutMs);
+  connect(otherGroupId: string, otherPeerID: string, signal: AbortSignal) {
+    return this.transport.connect(otherGroupId, otherPeerID, signal);
   }
 
   get state() {
