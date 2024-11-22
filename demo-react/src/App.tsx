@@ -4,25 +4,24 @@ import { usePeerStore } from "./peer.ts";
 export default function App() {
   const [peerId, setPeerId] = useState("");
   const [otherPeerId, setOtherPeerId] = useState("");
-  const [stream, setStream] = useState<MediaStream | null>(null);
   const peer = usePeerStore();
 
   useEffect(() => {
     (async () => {
       const s = await navigator.mediaDevices.getUserMedia({ video: true });
-      setStream(s);
+      peer.setLocalStream(s);
     })();
   }, []);
 
   return (
     <>
       <nav className="bottom">
-        {(!stream || !peer.ref)
+        {(!peer.localStream || !peer.ref)
           ? (
             <form
               onSubmit={(e) => {
                 e.preventDefault();
-                peer.start(peerId, stream);
+                peer.start(peerId);
               }}
               className="responsive"
             >
@@ -36,7 +35,7 @@ export default function App() {
                     onChange={(e) => setPeerId(e.target.value)}
                   />
                 </div>
-                <button type="submit" disabled={!stream || peer.loading} value="Go Live">
+                <button type="submit" disabled={!peer.localStream || peer.loading} value="Go Live">
                   {peer.loading
                     ? <progress className="circle small"></progress>
                     : <span>Go Live</span>
@@ -80,7 +79,7 @@ export default function App() {
       <main className="responsive max grid">
         <VideoContainer
           className="s12 m6 no-padding"
-          stream={stream}
+          stream={peer.localStream}
           loading={false}
           title={peerId}
         />

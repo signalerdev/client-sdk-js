@@ -18,7 +18,9 @@ interface PeerState {
   ref: Peer | null;
   loading: boolean;
   sessions: Record<string, SessionProps>;
-  start: (peerId: string, localStream: MediaStream | null) => Promise<void>;
+  localStream: MediaStream | null;
+  setLocalStream: (_: MediaStream) => void;
+  start: (peerId: string) => Promise<void>;
   stop: () => void;
   connect: (otherPeerId: string) => void;
 }
@@ -27,7 +29,11 @@ export const usePeerStore = create<PeerState>((set, get) => ({
   ref: null,
   sessions: {},
   loading: false,
-  start: async (peerId, localStream) => {
+  localStream: null,
+  setLocalStream: (localStream: MediaStream) => {
+    set({ localStream });
+  },
+  start: async (peerId) => {
     if (get().ref) return;
     if (get().loading) return;
 
@@ -69,7 +75,10 @@ export const usePeerStore = create<PeerState>((set, get) => ({
           }
         };
 
-        localStream?.getTracks().forEach((track) => s.addTrack(track, localStream));
+        const localStream = get().localStream;
+        if (localStream) {
+          localStream.getTracks().forEach((track) => s.addTrack(track, localStream));
+        }
 
         set(produce((state: PeerState) => {
           state.sessions[id] = {
