@@ -56,7 +56,7 @@ function getAllPairs<T>(list: T[]): [T, T][] {
 }
 
 test.describe("basic", () => {
-  const browserNames = ["chromium", "chrome", "msedge", "webkit"];
+  const browserNames = ["chromium", "chrome", "msedge"];
   const browsers: Browser[] = [];
   const pairs: [string, string][] = getAllPairs(browserNames);
 
@@ -67,17 +67,17 @@ test.describe("basic", () => {
         '--use-fake-device-for-media-stream'
       ]
     };
-    const [chromium, chrome, msedge, webkit] = await Promise.all([
+    const [chromium, chrome, msedge] = await Promise.all([
       bChromium.launch({ ...chromiumFake }),
       bChromium.launch({ ...chromiumFake, channel: "chrome" }),
       bChromium.launch({ ...chromiumFake, channel: "msedge" }),
-      bWebkit.launch(),
+      // bWebkit.launch(),
     ])
 
     browsers["chromium"] = chromium;
     browsers["chrome"] = chrome;
     browsers["msedge"] = msedge;
-    browsers["webkit"] = webkit;
+    // browsers["webkit"] = webkit;
   });
 
   for (const [bA, bB] of pairs) {

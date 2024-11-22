@@ -182,6 +182,7 @@ export class Session {
         local,
         remote,
         pair,
+        pending: this.pendingCandidates,
       });
     };
 
@@ -213,7 +214,48 @@ export class Session {
 
       this.setConnectionState(this.pc.connectionState, ev);
     };
-    this.pc.onnegotiationneeded = this.handleNegotiation.bind(this);
+    let firstOffer = true;
+    this.pc.onnegotiationneeded = async () => {
+      if (firstOffer) {
+        if (!this.impolite) {
+          // the impolite always initiates with an offer
+          this.stream.send({
+            payloadType: {
+              oneofKind: "join",
+              join: {},
+            }
+          }, true);
+          return;
+        }
+        firstOffer = false;
+      }
+
+      try {
+        this.makingOffer = true;
+        this.logger.debug("creating an offer");
+        await this.pc.setLocalDescription();
+        if (!this.pc.localDescription) {
+          throw new Error("expect localDescription to be not empty");
+        }
+
+        this.sendSignal({
+          data: {
+            oneofKind: "sdp",
+            sdp: {
+              kind: fromSDPType(this.pc.localDescription.type),
+              sdp: this.pc.localDescription.sdp,
+            },
+          },
+        });
+      } catch (err) {
+        if (err instanceof Error) {
+          this.logger.error("failed in negotiating", { err });
+        }
+      } finally {
+        this.makingOffer = false;
+      }
+    };
+
     this.pc.onicecandidate = ({ candidate }) => {
       this.logger.debug("onicecandidate", { candidate });
       const ice: ICECandidate = {
@@ -294,33 +336,6 @@ export class Session {
         signal: { ...signal, generationCounter: this.generationCounter },
       },
     }, true);
-  };
-
-  private handleNegotiation = async () => {
-    try {
-      this.makingOffer = true;
-      this.logger.debug("creating an offer");
-      await this.pc.setLocalDescription();
-      if (!this.pc.localDescription) {
-        throw new Error("expect localDescription to be not empty");
-      }
-
-      this.sendSignal({
-        data: {
-          oneofKind: "sdp",
-          sdp: {
-            kind: fromSDPType(this.pc.localDescription.type),
-            sdp: this.pc.localDescription.sdp,
-          },
-        },
-      });
-    } catch (err) {
-      if (err instanceof Error) {
-        this.logger.error("failed in negotiating", { err });
-      }
-    } finally {
-      this.makingOffer = false;
-    }
   };
 
   private handleMessage = async (payload: MessagePayload) => {
