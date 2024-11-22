@@ -4,6 +4,10 @@ import { DEFAULT_LOG_SINK, Logger, PRETTY_LOG_SINK } from "./logger";
 import { Session } from "./session";
 import { RpcError, UnaryCall, RpcOptions } from "@protobuf-ts/runtime-rpc";
 import { TwirpErrorCode, TwirpFetchTransport } from "@protobuf-ts/twirp-transport";
+import { retry } from "./util";
+
+const PREPARE_INITIAL_DELAY_MS = 50;
+const PREPARE_MAX_RETRY = 3;
 
 export type ISession = Pick<
   Session,
@@ -113,7 +117,11 @@ const TWIRP_FATAL_ERRORS: string[] = [
   TwirpErrorCode[TwirpErrorCode.unauthenticated],
 ];
 
-function isTwirpRecoverable(err: Error): boolean {
+function isTwirpRecoverable(err: unknown): boolean {
+  if (!(err instanceof Error)) {
+    return false;
+  }
+
   if (!(err instanceof RpcError)) {
     return true;
   }
@@ -147,7 +155,14 @@ export async function createPeer(opts: PeerOptions): Promise<Peer> {
   const client = new TunnelClient(twirp);
   const token = opts.token;
 
-  const resp = await client.prepare({});
+  const resp = await retry(
+    async () => await client.prepare({}),
+    {
+      baseDelay: 50,
+      maxDelay: 1000,
+      maxRetries: 5,
+      isRecoverable: isTwirpRecoverable,
+    });
   const iceServers = [...(opts.iceServers || [])];
   for (const s of resp.response.iceServers) {
     iceServers.push({

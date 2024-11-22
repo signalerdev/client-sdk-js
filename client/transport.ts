@@ -9,7 +9,7 @@ import {
   ITunnelClient,
 } from "./tunnel.client";
 import type { Logger } from "./logger";
-import { joinSignals } from "./util";
+import { asleep, joinSignals } from "./util";
 
 const POLL_TIMEOUT_MS = 60000;
 const RETRY_DELAY_MS = 1000;
@@ -21,21 +21,7 @@ export enum ReservedConnId {
   Max = 16,
 }
 
-export function delay(ms: number, signal?: AbortSignal): Promise<void> {
-  return new Promise((resolve, reject) => {
-    const timeoutId = setTimeout(resolve, ms);
-
-    // If an AbortSignal is provided, listen for the 'abort' event
-    if (signal) {
-      signal.addEventListener("abort", () => {
-        clearTimeout(timeoutId); // Cancel the delay
-        reject(new Error(signal.reason));
-      });
-    }
-  });
-}
-
-const defaultAsleep = delay;
+const defaultAsleep = asleep;
 const defaultRandUint32 = (
   reserved: number,
 ) => (Math.floor(Math.random() * ((2 ** 32) - reserved)) + reserved);
