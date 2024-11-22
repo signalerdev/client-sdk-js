@@ -4,16 +4,18 @@ import type {
   MessageHeader,
   MessagePayload,
   PeerInfo,
+  RecvReq,
 } from "./tunnel";
 import {
   ITunnelClient,
 } from "./tunnel.client";
 import type { Logger } from "./logger";
-import { asleep, joinSignals } from "./util";
+import { asleep, joinSignals, retry, RetryOptions } from "./util";
+import { RpcOptions } from "@protobuf-ts/runtime-rpc";
 
 const POLL_TIMEOUT_MS = 60000;
-const RETRY_DELAY_MS = 1000;
-const RETRY_JITTER_MS = 100;
+const POLL_RETRY_BASE_DELAY_MS = 50;
+const POLL_RETRY_MAX_DELAY_MS = 1000;
 const MAX_RELIABLE_RETRY_COUNT = 5;
 
 export enum ReservedConnId {
@@ -139,30 +141,29 @@ export class Transport {
   }
 
   async listen() {
+    const rpcOpt: RpcOptions = {
+      abort: this.abort.signal,
+      timeout: POLL_TIMEOUT_MS,
+    };
+    const retryOpt: RetryOptions = {
+      baseDelay: POLL_RETRY_BASE_DELAY_MS,
+      maxDelay: POLL_RETRY_MAX_DELAY_MS,
+      maxRetries: -1,
+      abortSignal: this.abort.signal,
+    };
+
     while (!this.abort.signal.aborted) {
       try {
-        const resp = await this.client.recv({
+        const resp = await retry(async () => await this.client.recv({
           info: this.info,
-        }, { abort: this.abort.signal, timeout: POLL_TIMEOUT_MS });
+        }, rpcOpt), retryOpt);
 
         // make sure to not block polling loop
         new Promise(() => this.handleMessages(resp.response.msgs));
       } catch (err) {
-        let reason = "";
-        if (err instanceof Error) {
-          reason = err.message;
-          if (!this.isRecoverable(err)) {
-            this.logger.warn("unrecoverable error, force closing", { err });
-            this.close(reason);
-            return;
-          }
-        }
-
-        this.logger.error("failed to poll", { reason });
-        await this.asleep(
-          RETRY_DELAY_MS + Math.random() * RETRY_JITTER_MS,
-          this.abort.signal,
-        ).catch(() => { });
+        this.logger.error("unrecoverable error, force closing", { err });
+        this.close();
+        return;
       }
     }
     this.logger.debug("connection closed");
@@ -256,10 +257,7 @@ export class Transport {
         header,
         payload,
       });
-      await this.asleep(
-        RETRY_DELAY_MS + Math.random() * RETRY_JITTER_MS,
-        this.abort.signal,
-      ).catch(() => { });
+      await this.asleep(POLL_RETRY_MAX_DELAY_MS, this.abort.signal).catch(() => { });
 
       const found = this.streams.find((s) =>
         s.otherGroupId === otherGroupId && s.otherPeerId === otherPeerId
@@ -273,35 +271,28 @@ export class Transport {
   }
 
   async send(signal: AbortSignal, msg: Message) {
-    // In certain cases such as sending a fire-and-forget bye message,
-    // the client will race between aborting and sending the signal.
-    // do..while solves the race by making sure to send the message once.
-    do {
-      try {
-        await this.client.send({
-          msg,
-        }, {
-          abort: signal,
-          timeout: POLL_TIMEOUT_MS,
-        });
-        this.logger.debug("sent", { msg });
-        return;
-      } catch (err) {
-        if (err instanceof Error) {
-          const reason = err.message;
-          if (!this.isRecoverable(err)) {
-            this.close(reason);
-            return;
-          }
-        }
-        this.logger.warn("failed to send, retrying", { err });
-      }
+    const joinedSignal = joinSignals(signal, this.abort.signal);
+    const rpcOpt: RpcOptions = {
+      abort: joinedSignal,
+      timeout: POLL_TIMEOUT_MS,
+    };
+    const retryOpt: RetryOptions = {
+      baseDelay: POLL_RETRY_BASE_DELAY_MS,
+      maxDelay: POLL_RETRY_MAX_DELAY_MS,
+      maxRetries: -1,
+      abortSignal: joinedSignal,
+    };
 
-      await this.asleep(
-        RETRY_DELAY_MS + Math.random() * RETRY_JITTER_MS,
-        this.abort.signal,
-      ).catch(() => { });
-    } while (!signal.aborted && !this.abort.signal.aborted);
+    try {
+      await retry(async () => await this.client.send(
+        { msg }, rpcOpt), retryOpt);
+      this.logger.debug("sent", { msg });
+      return;
+    } catch (err) {
+      this.logger.error("unrecoverable error, force closing", { err });
+      this.close();
+      return;
+    }
   }
 
   onstreamclosed(closed: Stream) {
@@ -388,9 +379,7 @@ export class Stream {
     while (!signal.aborted) {
       await this.transport.send(this.abort.signal, msg);
 
-      await this.transport.asleep(
-        5 * RETRY_DELAY_MS + Math.random() * RETRY_JITTER_MS,
-        this.abort.signal,
+      await this.transport.asleep(5 * POLL_RETRY_MAX_DELAY_MS, this.abort.signal
       ).catch(() => { });
 
       // since ackedbuf doesn't delete the seqnum right away, it prevents from racing between

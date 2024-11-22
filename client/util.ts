@@ -31,11 +31,12 @@ export function joinSignals(...signals: AbortSignal[]): AbortSignal {
 }
 
 export type RetryOptions = {
-  maxRetries: number; // Maximum retry attempts
+  maxRetries: number; // Maximum retry attempts. negative means no limit, 0 means 1 try (0 retry)
   baseDelay: number; // Initial delay in milliseconds
   maxDelay: number; // Maximum delay in milliseconds
   jitterFactor?: number; // Jitter percentage (e.g., 0.3 for 30%)
   isRecoverable?: (error: unknown) => boolean; // Function to categorize recoverable errors
+  abortSignal?: AbortSignal;
 };
 
 export async function retry<T>(
@@ -48,11 +49,12 @@ export async function retry<T>(
     maxDelay,
     jitterFactor = 0.3,
     isRecoverable = () => true, // Default: all errors are recoverable
+    abortSignal,
   } = options;
 
   let attempt = 0;
 
-  while (attempt <= maxRetries) {
+  while ((attempt <= maxRetries || maxRetries < 0) && !abortSignal?.aborted) {
     try {
       return await asyncFunction(); // Execute the function
     } catch (error) {
@@ -62,17 +64,17 @@ export async function retry<T>(
       }
 
       attempt++;
-      if (attempt > maxRetries) {
+      if (maxRetries >= 0 && attempt > maxRetries) {
         throw error; // Exceeded max retries
       }
 
       // Calculate delay with exponential backoff and jitter
       const delay = calculateDelay(attempt, baseDelay, maxDelay, jitterFactor);
-      await asleep(delay); // Wait before the next attempt
+      await asleep(delay, abortSignal).catch(() => { }); // Wait before the next attempt
     }
   }
 
-  throw new Error('Retry failed: max retries exceeded'); // This is a fallback; should rarely occur
+  throw new Error('Retry failed: max retries exceeded or has been aborted'); // This is a fallback; should rarely occur
 }
 
 // Helper to calculate exponential backoff with jitter
