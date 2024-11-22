@@ -49,7 +49,7 @@ export class Peer {
     logger: Logger,
     client: ITunnelClient,
     opts: PeerOptions,
-    isRecoverable: (_err: Error) => boolean,
+    isRecoverable: (_err: unknown) => boolean,
   ) {
     this.peerId = opts.peerId;
     this.logger = logger.sub("peer", { peerId: this.peerId });
@@ -111,7 +111,6 @@ const TWIRP_FATAL_ERRORS: string[] = [
   TwirpErrorCode[TwirpErrorCode.invalid_argument],
   TwirpErrorCode[TwirpErrorCode.aborted],
   TwirpErrorCode[TwirpErrorCode.bad_route],
-  TwirpErrorCode[TwirpErrorCode.dataloss],
   TwirpErrorCode[TwirpErrorCode.malformed],
   TwirpErrorCode[TwirpErrorCode.not_found],
   TwirpErrorCode[TwirpErrorCode.unauthenticated],
@@ -163,6 +162,9 @@ export async function createPeer(opts: PeerOptions): Promise<Peer> {
       maxRetries: 5,
       isRecoverable: isTwirpRecoverable,
     });
+  if (resp === null) {
+    throw new Error("createPeer aborted");
+  }
   const iceServers = [...(opts.iceServers || [])];
   for (const s of resp.response.iceServers) {
     iceServers.push({

@@ -42,7 +42,7 @@ export type RetryOptions = {
 export async function retry<T>(
   asyncFunction: () => Promise<T>,
   options: RetryOptions
-): Promise<T> {
+): Promise<T | null> {
   const {
     maxRetries,
     baseDelay,
@@ -74,7 +74,11 @@ export async function retry<T>(
     }
   }
 
-  throw new Error('Retry failed: max retries exceeded or has been aborted'); // This is a fallback; should rarely occur
+  if (abortSignal?.aborted) {
+    return null;
+  }
+
+  throw new Error('Retry failed: max retries exceeded'); // This is a fallback; should rarely occur
 }
 
 // Helper to calculate exponential backoff with jitter

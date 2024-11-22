@@ -27,7 +27,7 @@ const defaultAsleep = asleep;
 const defaultRandUint32 = (
   reserved: number,
 ) => (Math.floor(Math.random() * ((2 ** 32) - reserved)) + reserved);
-const defaultIsRecoverable = (_err: Error) => true;
+const defaultIsRecoverable = (_err: unknown) => true;
 
 // This is a processing queue that can handle unreliable and reliable messages.
 // The processing prioritizes unreliable messages over reliable messages.
@@ -150,6 +150,7 @@ export class Transport {
       maxDelay: POLL_RETRY_MAX_DELAY_MS,
       maxRetries: -1,
       abortSignal: this.abort.signal,
+      isRecoverable: this.isRecoverable,
     };
 
     while (!this.abort.signal.aborted) {
@@ -157,6 +158,9 @@ export class Transport {
         const resp = await retry(async () => await this.client.recv({
           info: this.info,
         }, rpcOpt), retryOpt);
+        if (resp === null) {
+          break;
+        }
 
         // make sure to not block polling loop
         new Promise(() => this.handleMessages(resp.response.msgs));
@@ -281,11 +285,17 @@ export class Transport {
       maxDelay: POLL_RETRY_MAX_DELAY_MS,
       maxRetries: -1,
       abortSignal: joinedSignal,
+      isRecoverable: this.isRecoverable,
     };
 
     try {
-      await retry(async () => await this.client.send(
+      const resp = await retry(async () => await this.client.send(
         { msg }, rpcOpt), retryOpt);
+      if (resp === null) {
+        this.logger.warn("aborted, message dropped from sending", { msg });
+        return;
+      }
+
       this.logger.debug("sent", { msg });
       return;
     } catch (err) {
