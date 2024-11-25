@@ -147,7 +147,11 @@ export class Session {
     this.pendingCandidates = [];
     // Higher is impolite. [0-15] is reserved. One of the reserved value can be used
     // for implementing fixed "polite" role for lite ICE.
-    this.impolite = this.stream.connId > this.stream.otherConnId;
+    if (this.stream.connId === this.stream.otherConnId) {
+      this.impolite = this.stream.peerId > this.stream.otherPeerId;
+    } else {
+      this.impolite = this.stream.connId > this.stream.otherConnId;
+    }
     this.abort = new AbortController();
     this.logger = stream.logger.sub("session", {
       role: this.impolite ? "impolite" : "polite",
